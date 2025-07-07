@@ -1,4 +1,4 @@
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use crop::Rope;
 use flutter_rust_bridge::frb;
@@ -8,20 +8,24 @@ pub struct Buffer {
     text: Rope,
     pub version: usize,
     line_lengths: BTreeMap<usize, usize>,
-    longest_line_index: usize,
+    // (length, line_index)
+    length_index_set: BTreeSet<(usize, usize)>,
 }
 
 impl Buffer {
     #[frb(sync)]
     pub fn new() -> Self {
         let mut line_lengths = BTreeMap::new();
+        let mut length_index_set = BTreeSet::new();
+
         line_lengths.insert(0, 0);
+        length_index_set.insert((0, 0));
 
         Self {
             text: Rope::new(),
             version: 0,
             line_lengths,
-            longest_line_index: 0,
+            length_index_set,
         }
     }
 
@@ -41,32 +45,23 @@ impl Buffer {
 
     fn update_line_lengths(&mut self, start_row: usize, end_row: usize) {
         if start_row == end_row {
-            let line_length = self.actual_line_len(start_row);
-            self.line_lengths.insert(start_row, line_length);
-
-            if line_length
-                > *self
-                    .line_lengths
-                    .get(&self.longest_line_index)
-                    .unwrap_or(&0)
-            {
-                self.longest_line_index = start_row;
-            }
+            self.update_single_line_length(start_row);
         } else {
-            for i in start_row..end_row {
-                let line_length = self.actual_line_len(i);
-                self.line_lengths.insert(i, line_length);
-
-                if line_length
-                    > *self
-                        .line_lengths
-                        .get(&self.longest_line_index)
-                        .unwrap_or(&0)
-                {
-                    self.longest_line_index = i;
-                }
+            for i in start_row..=end_row {
+                self.update_single_line_length(i);
             }
         }
+    }
+
+    fn update_single_line_length(&mut self, row: usize) {
+        if let Some(&old_length) = self.line_lengths.get(&row) {
+            self.length_index_set.remove(&(old_length, row));
+        }
+
+        let new_length = self.actual_line_len(row);
+
+        self.line_lengths.insert(row, new_length);
+        self.length_index_set.insert((new_length, row));
     }
 
     #[frb(sync, type_64bit_int)]
@@ -159,9 +154,9 @@ impl Buffer {
 
     #[frb(sync, type_64bit_int)]
     pub fn max_line_length(&self) -> usize {
-        self.line_lengths
-            .get(&self.longest_line_index)
-            .unwrap_or(&0)
-            .clone()
+        self.length_index_set
+            .last()
+            .map(|(length, _)| *length)
+            .unwrap_or(0)
     }
 }

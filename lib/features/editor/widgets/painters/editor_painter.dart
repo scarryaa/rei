@@ -27,6 +27,8 @@ class EditorPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
+    canvas.clipRect(Rect.fromLTWH(0, 0, size.width, size.height));
+
     drawSelection(canvas, size);
     drawText(canvas, size);
     drawCursor(canvas, size);
