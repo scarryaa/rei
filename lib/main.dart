@@ -5,11 +5,11 @@ import 'package:rei/features/editor/screens/editor_screen.dart';
 
 Future<void> main() async {
   await RustLib.init();
-  runApp(ProviderScope(child: const MyApp()));
+  runApp(ProviderScope(child: const ReiApp()));
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class ReiApp extends StatelessWidget {
+  const ReiApp({super.key});
 
   @override
   Widget build(BuildContext context) {

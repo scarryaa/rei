@@ -6,6 +6,8 @@
 // Static analysis wrongly picks the IO variant, thus ignore this
 // ignore_for_file: argument_type_not_assignable
 
+import 'api/buffer.dart';
+import 'api/cursor.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'frb_generated.dart';
@@ -19,11 +21,173 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
     required super.portManager,
   });
 
+  CrossPlatformFinalizerArg
+  get rust_arc_decrement_strong_count_BufferPtr => wire
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer;
+
+  @protected
+  Buffer
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+    dynamic raw,
+  );
+
+  @protected
+  Buffer
+  dco_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+    dynamic raw,
+  );
+
+  @protected
+  Buffer
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+    dynamic raw,
+  );
+
+  @protected
+  int dco_decode_CastedPrimitive_usize(dynamic raw);
+
+  @protected
+  Buffer
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+    dynamic raw,
+  );
+
+  @protected
+  String dco_decode_String(dynamic raw);
+
+  @protected
+  Cursor dco_decode_cursor(dynamic raw);
+
+  @protected
+  Uint8List dco_decode_list_prim_u_8_strict(dynamic raw);
+
+  @protected
+  (int, int) dco_decode_record_casted_primitive_usize_casted_primitive_usize(
+    dynamic raw,
+  );
+
+  @protected
+  int dco_decode_u_8(dynamic raw);
+
+  @protected
+  void dco_decode_unit(dynamic raw);
+
+  @protected
+  BigInt dco_decode_usize(dynamic raw);
+
+  @protected
+  Buffer
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  Buffer
+  sse_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  Buffer
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  int sse_decode_CastedPrimitive_usize(SseDeserializer deserializer);
+
+  @protected
+  Buffer
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  String sse_decode_String(SseDeserializer deserializer);
+
+  @protected
+  Cursor sse_decode_cursor(SseDeserializer deserializer);
+
+  @protected
+  Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer);
+
+  @protected
+  (int, int) sse_decode_record_casted_primitive_usize_casted_primitive_usize(
+    SseDeserializer deserializer,
+  );
+
+  @protected
+  int sse_decode_u_8(SseDeserializer deserializer);
+
+  @protected
+  void sse_decode_unit(SseDeserializer deserializer);
+
+  @protected
+  BigInt sse_decode_usize(SseDeserializer deserializer);
+
   @protected
   int sse_decode_i_32(SseDeserializer deserializer);
 
   @protected
   bool sse_decode_bool(SseDeserializer deserializer);
+
+  @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+    Buffer self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+    Buffer self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+    Buffer self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_CastedPrimitive_usize(int self, SseSerializer serializer);
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+    Buffer self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_String(String self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_cursor(Cursor self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_list_prim_u_8_strict(
+    Uint8List self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_record_casted_primitive_usize_casted_primitive_usize(
+    (int, int) self,
+    SseSerializer serializer,
+  );
+
+  @protected
+  void sse_encode_u_8(int self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_unit(void self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_usize(BigInt self, SseSerializer serializer);
 
   @protected
   void sse_encode_i_32(int self, SseSerializer serializer);
@@ -36,6 +200,22 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
 class RustLibWire implements BaseWire {
   RustLibWire.fromExternalLibrary(ExternalLibrary lib);
+
+  void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+    int ptr,
+  ) => wasmModule
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+        ptr,
+      );
+
+  void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+    int ptr,
+  ) => wasmModule
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+        ptr,
+      );
 }
 
 @JS('wasm_bindgen')
@@ -43,4 +223,14 @@ external RustLibWasmModule get wasmModule;
 
 @JS()
 @anonymous
-extension type RustLibWasmModule._(JSObject _) implements JSObject {}
+extension type RustLibWasmModule._(JSObject _) implements JSObject {
+  external void
+  rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+    int ptr,
+  );
+
+  external void
+  rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+    int ptr,
+  );
+}

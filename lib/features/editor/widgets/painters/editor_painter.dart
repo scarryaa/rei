@@ -1,9 +1,11 @@
 import 'package:flutter/widgets.dart';
+import 'package:rei/bridge/rust/api/buffer.dart';
 
 class EditorPainter extends CustomPainter {
-  EditorPainter({required this.textPainter});
+  EditorPainter({required this.textPainter, required this.buffer});
 
   final TextPainter textPainter;
+  final Buffer buffer;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -15,7 +17,8 @@ class EditorPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return true;
+  bool shouldRepaint(covariant EditorPainter oldDelegate) {
+    return oldDelegate.buffer.version != buffer.version ||
+        oldDelegate.textPainter != textPainter;
   }
 }

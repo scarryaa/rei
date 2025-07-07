@@ -3,6 +3,8 @@
 
 // ignore_for_file: unused_import, unused_element, unnecessary_import, duplicate_ignore, invalid_use_of_internal_member, annotate_overrides, non_constant_identifier_names, curly_braces_in_flow_control_structures, prefer_const_literals_to_create_immutables, unused_field
 
+import 'api/buffer.dart';
+import 'api/cursor.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'frb_generated.dart';
@@ -63,7 +65,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.11.1';
 
   @override
-  int get rustContentHash => -291292710;
+  int get rustContentHash => -851805047;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -73,7 +75,50 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
       );
 }
 
-abstract class RustLibApi extends BaseApi {}
+abstract class RustLibApi extends BaseApi {
+  int crateApiBufferBufferAutoAccessorGetVersion({required Buffer that});
+
+  void crateApiBufferBufferAutoAccessorSetVersion({
+    required Buffer that,
+    required int version,
+  });
+
+  (int, int) crateApiBufferBufferIdxToRowColumn({
+    required Buffer that,
+    required int idx,
+  });
+
+  (int, int) crateApiBufferBufferInsert({
+    required Buffer that,
+    required int row,
+    required int column,
+    required String text,
+  });
+
+  Buffer crateApiBufferBufferNew();
+
+  int crateApiBufferBufferRowColumnToIdx({
+    required Buffer that,
+    required int row,
+    required int column,
+  });
+
+  String crateApiBufferBufferToString({required Buffer that});
+
+  Cursor crateApiCursorCursorDefault();
+
+  Cursor crateApiCursorCursorNew({
+    required int row,
+    required int column,
+    required int stickyColumn,
+  });
+
+  RustArcIncrementStrongCountFnType get rust_arc_increment_strong_count_Buffer;
+
+  RustArcDecrementStrongCountFnType get rust_arc_decrement_strong_count_Buffer;
+
+  CrossPlatformFinalizerArg get rust_arc_decrement_strong_count_BufferPtr;
+}
 
 class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   RustLibApiImpl({
@@ -82,6 +127,495 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     required super.generalizedFrbRustBinding,
     required super.portManager,
   });
+
+  @override
+  int crateApiBufferBufferAutoAccessorGetVersion({required Buffer that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 1)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_CastedPrimitive_usize,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiBufferBufferAutoAccessorGetVersionConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiBufferBufferAutoAccessorGetVersionConstMeta =>
+      const TaskConstMeta(
+        debugName: 'Buffer_auto_accessor_get_version',
+        argNames: ['that'],
+      );
+
+  @override
+  void crateApiBufferBufferAutoAccessorSetVersion({
+    required Buffer that,
+    required int version,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+            that,
+            serializer,
+          );
+          sse_encode_CastedPrimitive_usize(version, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 2)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_unit,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiBufferBufferAutoAccessorSetVersionConstMeta,
+        argValues: [that, version],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiBufferBufferAutoAccessorSetVersionConstMeta =>
+      const TaskConstMeta(
+        debugName: 'Buffer_auto_accessor_set_version',
+        argNames: ['that', 'version'],
+      );
+
+  @override
+  (int, int) crateApiBufferBufferIdxToRowColumn({
+    required Buffer that,
+    required int idx,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+            that,
+            serializer,
+          );
+          sse_encode_CastedPrimitive_usize(idx, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 3)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_record_casted_primitive_usize_casted_primitive_usize,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiBufferBufferIdxToRowColumnConstMeta,
+        argValues: [that, idx],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiBufferBufferIdxToRowColumnConstMeta =>
+      const TaskConstMeta(
+        debugName: 'Buffer_idx_to_row_column',
+        argNames: ['that', 'idx'],
+      );
+
+  @override
+  (int, int) crateApiBufferBufferInsert({
+    required Buffer that,
+    required int row,
+    required int column,
+    required String text,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+            that,
+            serializer,
+          );
+          sse_encode_CastedPrimitive_usize(row, serializer);
+          sse_encode_CastedPrimitive_usize(column, serializer);
+          sse_encode_String(text, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 4)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_record_casted_primitive_usize_casted_primitive_usize,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiBufferBufferInsertConstMeta,
+        argValues: [that, row, column, text],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiBufferBufferInsertConstMeta => const TaskConstMeta(
+    debugName: 'Buffer_insert',
+    argNames: ['that', 'row', 'column', 'text'],
+  );
+
+  @override
+  Buffer crateApiBufferBufferNew() {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 5)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiBufferBufferNewConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiBufferBufferNewConstMeta =>
+      const TaskConstMeta(debugName: 'Buffer_new', argNames: []);
+
+  @override
+  int crateApiBufferBufferRowColumnToIdx({
+    required Buffer that,
+    required int row,
+    required int column,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+            that,
+            serializer,
+          );
+          sse_encode_CastedPrimitive_usize(row, serializer);
+          sse_encode_CastedPrimitive_usize(column, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 6)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_CastedPrimitive_usize,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiBufferBufferRowColumnToIdxConstMeta,
+        argValues: [that, row, column],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiBufferBufferRowColumnToIdxConstMeta =>
+      const TaskConstMeta(
+        debugName: 'Buffer_row_column_to_idx',
+        argNames: ['that', 'row', 'column'],
+      );
+
+  @override
+  String crateApiBufferBufferToString({required Buffer that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 7)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_String,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiBufferBufferToStringConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiBufferBufferToStringConstMeta =>
+      const TaskConstMeta(debugName: 'Buffer_to_string', argNames: ['that']);
+
+  @override
+  Cursor crateApiCursorCursorDefault() {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 8)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_cursor,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiCursorCursorDefaultConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiCursorCursorDefaultConstMeta =>
+      const TaskConstMeta(debugName: 'cursor_default', argNames: []);
+
+  @override
+  Cursor crateApiCursorCursorNew({
+    required int row,
+    required int column,
+    required int stickyColumn,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_CastedPrimitive_usize(row, serializer);
+          sse_encode_CastedPrimitive_usize(column, serializer);
+          sse_encode_CastedPrimitive_usize(stickyColumn, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 9)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_cursor,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiCursorCursorNewConstMeta,
+        argValues: [row, column, stickyColumn],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiCursorCursorNewConstMeta => const TaskConstMeta(
+    debugName: 'cursor_new',
+    argNames: ['row', 'column', 'stickyColumn'],
+  );
+
+  RustArcIncrementStrongCountFnType
+  get rust_arc_increment_strong_count_Buffer => wire
+      .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer;
+
+  RustArcDecrementStrongCountFnType
+  get rust_arc_decrement_strong_count_Buffer => wire
+      .rust_arc_decrement_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer;
+
+  @protected
+  Buffer
+  dco_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return BufferImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  Buffer
+  dco_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return BufferImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  Buffer
+  dco_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return BufferImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  int dco_decode_CastedPrimitive_usize(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    throw UnimplementedError(
+      'Not implemented in this codec, please use the other one',
+    );
+  }
+
+  @protected
+  Buffer
+  dco_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return BufferImpl.frbInternalDcoDecode(raw as List<dynamic>);
+  }
+
+  @protected
+  String dco_decode_String(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as String;
+  }
+
+  @protected
+  Cursor dco_decode_cursor(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 3)
+      throw Exception('unexpected arr length: expect 3 but see ${arr.length}');
+    return Cursor.raw(
+      row: dco_decode_CastedPrimitive_usize(arr[0]),
+      column: dco_decode_CastedPrimitive_usize(arr[1]),
+      stickyColumn: dco_decode_CastedPrimitive_usize(arr[2]),
+    );
+  }
+
+  @protected
+  Uint8List dco_decode_list_prim_u_8_strict(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as Uint8List;
+  }
+
+  @protected
+  (int, int) dco_decode_record_casted_primitive_usize_casted_primitive_usize(
+    dynamic raw,
+  ) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2) {
+      throw Exception('Expected 2 elements, got ${arr.length}');
+    }
+    return (
+      dco_decode_CastedPrimitive_usize(arr[0]),
+      dco_decode_CastedPrimitive_usize(arr[1]),
+    );
+  }
+
+  @protected
+  int dco_decode_u_8(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as int;
+  }
+
+  @protected
+  void dco_decode_unit(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return;
+  }
+
+  @protected
+  BigInt dco_decode_usize(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dcoDecodeU64(raw);
+  }
+
+  @protected
+  Buffer
+  sse_decode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return BufferImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  Buffer
+  sse_decode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return BufferImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  Buffer
+  sse_decode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return BufferImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  int sse_decode_CastedPrimitive_usize(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_usize(deserializer);
+    return inner.toInt();
+  }
+
+  @protected
+  Buffer
+  sse_decode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return BufferImpl.frbInternalSseDecode(
+      sse_decode_usize(deserializer),
+      sse_decode_i_32(deserializer),
+    );
+  }
+
+  @protected
+  String sse_decode_String(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var inner = sse_decode_list_prim_u_8_strict(deserializer);
+    return utf8.decoder.convert(inner);
+  }
+
+  @protected
+  Cursor sse_decode_cursor(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_row = sse_decode_CastedPrimitive_usize(deserializer);
+    var var_column = sse_decode_CastedPrimitive_usize(deserializer);
+    var var_stickyColumn = sse_decode_CastedPrimitive_usize(deserializer);
+    return Cursor.raw(
+      row: var_row,
+      column: var_column,
+      stickyColumn: var_stickyColumn,
+    );
+  }
+
+  @protected
+  Uint8List sse_decode_list_prim_u_8_strict(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var len_ = sse_decode_i_32(deserializer);
+    return deserializer.buffer.getUint8List(len_);
+  }
+
+  @protected
+  (int, int) sse_decode_record_casted_primitive_usize_casted_primitive_usize(
+    SseDeserializer deserializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_field0 = sse_decode_CastedPrimitive_usize(deserializer);
+    var var_field1 = sse_decode_CastedPrimitive_usize(deserializer);
+    return (var_field0, var_field1);
+  }
+
+  @protected
+  int sse_decode_u_8(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getUint8();
+  }
+
+  @protected
+  void sse_decode_unit(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+  }
+
+  @protected
+  BigInt sse_decode_usize(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getBigUint64();
+  }
 
   @protected
   int sse_decode_i_32(SseDeserializer deserializer) {
@@ -96,6 +630,115 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void
+  sse_encode_Auto_Owned_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+    Buffer self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as BufferImpl).frbInternalSseEncode(move: true),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+    Buffer self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as BufferImpl).frbInternalSseEncode(move: false),
+      serializer,
+    );
+  }
+
+  @protected
+  void
+  sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+    Buffer self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as BufferImpl).frbInternalSseEncode(move: false),
+      serializer,
+    );
+  }
+
+  @protected
+  void sse_encode_CastedPrimitive_usize(int self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(sseEncodeCastedPrimitiveU64(self), serializer);
+  }
+
+  @protected
+  void
+  sse_encode_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+    Buffer self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_usize(
+      (self as BufferImpl).frbInternalSseEncode(move: null),
+      serializer,
+    );
+  }
+
+  @protected
+  void sse_encode_String(String self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_list_prim_u_8_strict(utf8.encoder.convert(self), serializer);
+  }
+
+  @protected
+  void sse_encode_cursor(Cursor self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_CastedPrimitive_usize(self.row, serializer);
+    sse_encode_CastedPrimitive_usize(self.column, serializer);
+    sse_encode_CastedPrimitive_usize(self.stickyColumn, serializer);
+  }
+
+  @protected
+  void sse_encode_list_prim_u_8_strict(
+    Uint8List self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_i_32(self.length, serializer);
+    serializer.buffer.putUint8List(self);
+  }
+
+  @protected
+  void sse_encode_record_casted_primitive_usize_casted_primitive_usize(
+    (int, int) self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_CastedPrimitive_usize(self.$1, serializer);
+    sse_encode_CastedPrimitive_usize(self.$2, serializer);
+  }
+
+  @protected
+  void sse_encode_u_8(int self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putUint8(self);
+  }
+
+  @protected
+  void sse_encode_unit(void self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+  }
+
+  @protected
+  void sse_encode_usize(BigInt self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putBigUint64(self);
+  }
+
+  @protected
   void sse_encode_i_32(int self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putInt32(self);
@@ -106,4 +749,52 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putUint8(self ? 1 : 0);
   }
+}
+
+@sealed
+class BufferImpl extends RustOpaque implements Buffer {
+  // Not to be used by end users
+  BufferImpl.frbInternalDcoDecode(List<dynamic> wire)
+    : super.frbInternalDcoDecode(wire, _kStaticData);
+
+  // Not to be used by end users
+  BufferImpl.frbInternalSseDecode(BigInt ptr, int externalSizeOnNative)
+    : super.frbInternalSseDecode(ptr, externalSizeOnNative, _kStaticData);
+
+  static final _kStaticData = RustArcStaticData(
+    rustArcIncrementStrongCount:
+        RustLib.instance.api.rust_arc_increment_strong_count_Buffer,
+    rustArcDecrementStrongCount:
+        RustLib.instance.api.rust_arc_decrement_strong_count_Buffer,
+    rustArcDecrementStrongCountPtr:
+        RustLib.instance.api.rust_arc_decrement_strong_count_BufferPtr,
+  );
+
+  int get version => RustLib.instance.api
+      .crateApiBufferBufferAutoAccessorGetVersion(that: this);
+
+  set version(int version) => RustLib.instance.api
+      .crateApiBufferBufferAutoAccessorSetVersion(that: this, version: version);
+
+  (int, int) idxToRowColumn({required int idx}) => RustLib.instance.api
+      .crateApiBufferBufferIdxToRowColumn(that: this, idx: idx);
+
+  (int, int) insert({
+    required int row,
+    required int column,
+    required String text,
+  }) => RustLib.instance.api.crateApiBufferBufferInsert(
+    that: this,
+    row: row,
+    column: column,
+    text: text,
+  );
+
+  int rowColumnToIdx({required int row, required int column}) => RustLib
+      .instance
+      .api
+      .crateApiBufferBufferRowColumnToIdx(that: this, row: row, column: column);
+
+  String toString() =>
+      RustLib.instance.api.crateApiBufferBufferToString(that: this);
 }
