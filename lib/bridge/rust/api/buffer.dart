@@ -6,6 +6,8 @@
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
 
+// These functions are ignored because they are not marked as `pub`: `actual_line_len`, `update_line_lengths`
+
 // Rust type: RustOpaqueMoi<flutter_rust_bridge::for_generated::RustAutoOpaqueInner<Buffer>>
 abstract class Buffer implements RustOpaqueInterface {
   int get version;
@@ -23,6 +25,8 @@ abstract class Buffer implements RustOpaqueInterface {
   int lineCount();
 
   int lineLen({required int row});
+
+  int maxLineLength();
 
   factory Buffer() => RustLib.instance.api.crateApiBufferBufferNew();
 

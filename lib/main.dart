@@ -13,6 +13,18 @@ class ReiApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(home: EditorScreen(), debugShowCheckedModeBanner: false);
+    return MaterialApp(
+      home: EditorScreen(),
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData.dark().copyWith(
+        scrollbarTheme: ScrollbarThemeData(
+          radius: Radius.zero,
+          mainAxisMargin: 0.0,
+          crossAxisMargin: 0.0,
+          thumbColor: WidgetStatePropertyAll<Color>(Color(0x50FFFFFF)),
+          thickness: WidgetStatePropertyAll<double>(12.0),
+        ),
+      ),
+    );
   }
 }

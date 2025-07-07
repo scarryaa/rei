@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:math';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -119,6 +120,8 @@ class EditorWidget extends HookConsumerWidget {
     final focusNode = useFocusNode();
     final state = ref.watch(editorProvider);
     final notifier = ref.read(editorProvider.notifier);
+    final verticalScrollController = useScrollController();
+    final horizontalScrollController = useScrollController();
 
     final textStyle = useMemoized(
       () => TextStyle(
@@ -151,25 +154,75 @@ class EditorWidget extends HookConsumerWidget {
       );
     }, [textStyle]);
 
-    return Focus(
-      autofocus: true,
-      focusNode: focusNode,
-      onKeyEvent: (node, event) =>
-          _handleKeyEvent(node, event, state, notifier),
-      child: MouseRegion(
-        cursor: SystemMouseCursors.text,
-        child: CustomPaint(
-          willChange: true,
-          isComplex: true,
-          painter: EditorPainter(
-            textPainter: textPainter,
-            buffer: state.buffer,
-            cursor: state.cursor,
-            selection: state.selection,
-            fontMetrics: fontMetrics,
+    final padding = useMemoized(() {
+      final verticalMultiplier = 5.0;
+      final horizontalMultiplier = 8.0;
+
+      final vertical = verticalMultiplier * fontMetrics.lineHeight;
+      final horizontal = horizontalMultiplier * fontMetrics.charWidth;
+
+      return (horizontal: horizontal, vertical: vertical);
+    }, [fontMetrics]);
+
+    final size = useMemoized(() {
+      final lineCount = state.buffer.lineCount();
+      final maxLineLength = state.buffer.maxLineLength();
+      final height = lineCount * fontMetrics.lineHeight;
+      final width = maxLineLength * fontMetrics.charWidth;
+
+      return Size(width + padding.horizontal, height + padding.vertical);
+    }, [state.buffer.version, fontMetrics, padding]);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = max(size.width, constraints.maxWidth);
+        final height = max(size.height, constraints.maxHeight);
+        Size newSize = Size(width, height);
+
+        return Scrollbar(
+          controller: verticalScrollController,
+          child: Scrollbar(
+            controller: horizontalScrollController,
+            notificationPredicate: (notification) => notification.depth == 1,
+            child: ScrollConfiguration(
+              behavior: ScrollBehavior().copyWith(
+                scrollbars: false,
+                overscroll: false,
+                physics: ClampingScrollPhysics(),
+              ),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.vertical,
+                controller: verticalScrollController,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  controller: horizontalScrollController,
+                  child: Focus(
+                    autofocus: true,
+                    focusNode: focusNode,
+                    onKeyEvent: (node, event) =>
+                        _handleKeyEvent(node, event, state, notifier),
+                    child: MouseRegion(
+                      cursor: SystemMouseCursors.text,
+                      child: CustomPaint(
+                        size: newSize,
+                        willChange: true,
+                        isComplex: true,
+                        painter: EditorPainter(
+                          textPainter: textPainter,
+                          buffer: state.buffer,
+                          cursor: state.cursor,
+                          selection: state.selection,
+                          fontMetrics: fontMetrics,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }

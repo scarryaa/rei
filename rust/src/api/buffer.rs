@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use crop::Rope;
 use flutter_rust_bridge::frb;
 
@@ -5,14 +7,19 @@ use flutter_rust_bridge::frb;
 pub struct Buffer {
     text: Rope,
     pub version: usize,
+    line_lengths: BTreeMap<usize, usize>,
 }
 
 impl Buffer {
     #[frb(sync)]
     pub fn new() -> Self {
+        let mut line_lengths = BTreeMap::new();
+        line_lengths.insert(0, 0);
+
         Self {
             text: Rope::new(),
             version: 0,
+            line_lengths,
         }
     }
 
@@ -24,7 +31,21 @@ impl Buffer {
 
         let new_idx = char_idx + text.chars().count();
         let (new_row, new_column) = self.idx_to_row_column(new_idx);
+
+        self.update_line_lengths(row, new_row);
+
         (new_row, new_column)
+    }
+
+    fn update_line_lengths(&mut self, start_row: usize, end_row: usize) {
+        if start_row == end_row {
+            self.line_lengths
+                .insert(start_row, self.actual_line_len(start_row));
+        } else {
+            for i in start_row..end_row {
+                self.line_lengths.insert(i, self.actual_line_len(i));
+            }
+        }
     }
 
     #[frb(sync, type_64bit_int)]
@@ -39,6 +60,9 @@ impl Buffer {
 
         let new_idx = char_idx - 1;
         let (new_row, new_column) = self.idx_to_row_column(new_idx);
+
+        self.update_line_lengths(row, new_row);
+
         (new_row, new_column)
     }
 
@@ -55,6 +79,8 @@ impl Buffer {
 
         self.text.delete(start_idx..end_idx);
         self.version += 1;
+
+        self.update_line_lengths(start_row, end_row);
 
         (start_row, start_column)
     }
@@ -94,11 +120,24 @@ impl Buffer {
 
     #[frb(sync, type_64bit_int)]
     pub fn line_len(&self, row: usize) -> usize {
-        self.text.line(row).byte_len()
+        self.line_lengths.get(&row).unwrap_or(&0).clone()
+    }
+
+    fn actual_line_len(&self, row: usize) -> usize {
+        if row >= self.line_count() {
+            0
+        } else {
+            self.text.line(row).byte_len()
+        }
     }
 
     #[frb(sync)]
     pub fn to_string(&self) -> String {
         self.text.to_string()
+    }
+
+    #[frb(sync, type_64bit_int)]
+    pub fn max_line_length(&self) -> usize {
+        self.line_lengths.values().max().unwrap_or(&0).clone()
     }
 }
