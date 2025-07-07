@@ -1,7 +1,10 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:rei/bridge/rust/api/buffer.dart';
 import 'package:rei/bridge/rust/api/cursor.dart';
 import 'package:rei/bridge/rust/api/selection.dart';
+import 'package:rei/features/editor/models/font_metrics.dart';
 
 class EditorPainter extends CustomPainter {
   EditorPainter({
@@ -9,12 +12,14 @@ class EditorPainter extends CustomPainter {
     required this.buffer,
     required this.cursor,
     required this.selection,
+    required this.fontMetrics,
   });
 
   final TextPainter textPainter;
   final Buffer buffer;
   final Cursor cursor;
   final Selection selection;
+  final FontMetrics fontMetrics;
 
   static final Color cursorColor = Colors.lightBlue;
   static final Color selectionColor = Colors.lightBlue.withValues(alpha: 0.3);
@@ -62,10 +67,32 @@ class EditorPainter extends CustomPainter {
 
     final boxes = textPainter.getBoxesForSelection(
       TextSelection(baseOffset: baseOffset, extentOffset: extentOffset),
+      boxHeightStyle: BoxHeightStyle.max,
     );
 
     for (final box in boxes) {
-      canvas.drawRect(box.toRect(), Paint()..color = selectionColor);
+      final rect = box.toRect();
+
+      // Handle empty lines.
+      if (rect.width == 0) {
+        final newRect = Rect.fromLTWH(
+          0,
+          rect.top,
+          fontMetrics.charWidth,
+          fontMetrics.lineHeight,
+        );
+        canvas.drawRect(newRect, Paint()..color = selectionColor);
+      } else {
+        canvas.drawRect(
+          Rect.fromLTWH(
+            rect.left,
+            rect.top,
+            rect.width,
+            fontMetrics.lineHeight,
+          ),
+          Paint()..color = selectionColor,
+        );
+      }
     }
   }
 

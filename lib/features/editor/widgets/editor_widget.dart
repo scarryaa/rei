@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:rei/features/editor/models/font_metrics.dart';
 import 'package:rei/features/editor/models/state.dart';
 import 'package:rei/features/editor/providers/editor.dart';
 import 'package:rei/features/editor/widgets/painters/editor_painter.dart';
@@ -137,6 +138,19 @@ class EditorWidget extends HookConsumerWidget {
       return innerTextPainter;
     }, [state.buffer.version]);
 
+    final fontMetrics = useMemoized(() {
+      final innerCharPainter = TextPainter(
+        textDirection: TextDirection.ltr,
+        text: TextSpan(text: 'W', style: textStyle),
+      );
+      innerCharPainter.layout();
+
+      return FontMetrics(
+        lineHeight: innerCharPainter.preferredLineHeight,
+        charWidth: innerCharPainter.width,
+      );
+    }, [textStyle]);
+
     return Focus(
       focusNode: focusNode,
       onKeyEvent: (node, event) =>
@@ -149,6 +163,7 @@ class EditorWidget extends HookConsumerWidget {
           buffer: state.buffer,
           cursor: state.cursor,
           selection: state.selection,
+          fontMetrics: fontMetrics,
         ),
       ),
     );
