@@ -20,6 +20,9 @@ class EditorWidget extends HookConsumerWidget {
     }
 
     switch (event.logicalKey) {
+      case LogicalKeyboardKey.enter:
+        notifier.insert('\n');
+
       default:
         if (event.character != null) {
           notifier.insert(event.character!);

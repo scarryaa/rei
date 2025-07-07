@@ -36,7 +36,8 @@ impl Buffer {
     #[frb(sync, type_64bit_int)]
     pub fn idx_to_row_column(&self, idx: usize) -> (usize, usize) {
         let row = self.text.char_to_line(idx);
-        let column = idx - row;
+        let line_idx = self.text.line_to_char(row);
+        let column = idx - line_idx;
         (row, column)
     }
 
