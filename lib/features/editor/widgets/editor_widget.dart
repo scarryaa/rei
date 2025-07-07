@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:rei/features/editor/widgets/painters/editor_painter.dart';
 
-class EditorWidget extends StatelessWidget {
+class EditorWidget extends HookConsumerWidget {
   const EditorWidget({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final textPainter = TextPainter(
       textDirection: TextDirection.ltr,
       text: TextSpan(
