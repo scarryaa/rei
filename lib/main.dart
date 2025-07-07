@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:rei/bridge/rust/frb_generated.dart';
 import 'package:rei/features/editor/screens/editor_screen.dart';
-import 'package:rei/src/rust/frb_generated.dart';
 
 Future<void> main() async {
   await RustLib.init();
@@ -12,6 +12,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(home: EditorScreen());
+    return MaterialApp(home: EditorScreen(), debugShowCheckedModeBanner: false);
   }
 }

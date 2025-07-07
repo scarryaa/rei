@@ -6,6 +6,19 @@ class EditorWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(painter: EditorPainter());
+    final textPainter = TextPainter(
+      textDirection: TextDirection.ltr,
+      text: TextSpan(
+        text: 'Hello world',
+        style: TextStyle(
+          fontSize: 15.0,
+          fontFamily: 'IBM Plex Mono',
+          color: Colors.white,
+        ),
+      ),
+    );
+    textPainter.layout();
+
+    return CustomPaint(painter: EditorPainter(textPainter: textPainter));
   }
 }
