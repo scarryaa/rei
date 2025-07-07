@@ -2,6 +2,7 @@ import 'dart:math';
 
 import 'package:rei/bridge/rust/api/buffer.dart';
 import 'package:rei/bridge/rust/api/cursor.dart';
+import 'package:rei/bridge/rust/api/selection.dart';
 import 'package:rei/features/editor/models/state.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
@@ -11,10 +12,18 @@ part 'editor.g.dart';
 class Editor extends _$Editor {
   @override
   EditorState build() {
-    return EditorState(buffer: Buffer(), cursor: Cursor.default_());
+    return EditorState(
+      buffer: Buffer(),
+      cursor: Cursor.default_(),
+      selection: Selection.default_(),
+    );
   }
 
   void insert(String text) {
+    if (!state.selection.isEmpty()) {
+      // Delete selection.
+    }
+
     final cursor = state.cursor;
     final (newRow, newColumn) = state.buffer.insert(
       row: cursor.row,
@@ -31,6 +40,11 @@ class Editor extends _$Editor {
   }
 
   void removeChar() {
+    if (!state.selection.isEmpty()) {
+      // Delete selection.
+      return;
+    }
+
     final cursor = state.cursor;
 
     if (cursor.row == 0 && cursor.column == 0) return;
@@ -49,7 +63,7 @@ class Editor extends _$Editor {
   }
 
   // TODO: For movement methods, consider chars instead of +1 and -1.
-  void moveLeft() {
+  void moveLeft(bool extendSelection) {
     final cursor = state.cursor;
     Cursor newCursor = cursor;
 
@@ -72,10 +86,12 @@ class Editor extends _$Editor {
       );
     }
 
+    _startSelection(cursor, extendSelection);
     state = state.copyWith(cursor: newCursor);
+    _updateSelection(newCursor, extendSelection);
   }
 
-  void moveRight() {
+  void moveRight(bool extendSelection) {
     final cursor = state.cursor;
     Cursor newCursor = cursor;
     final lineCount = state.buffer.lineCount() - 1;
@@ -96,10 +112,12 @@ class Editor extends _$Editor {
       );
     }
 
+    _startSelection(cursor, extendSelection);
     state = state.copyWith(cursor: newCursor);
+    _updateSelection(newCursor, extendSelection);
   }
 
-  void moveUp() {
+  void moveUp(bool extendSelection) {
     final cursor = state.cursor;
     Cursor newCursor = cursor;
 
@@ -117,10 +135,12 @@ class Editor extends _$Editor {
       );
     }
 
+    _startSelection(cursor, extendSelection);
     state = state.copyWith(cursor: newCursor);
+    _updateSelection(newCursor, extendSelection);
   }
 
-  void moveDown() {
+  void moveDown(bool extendSelection) {
     final cursor = state.cursor;
     Cursor newCursor = cursor;
 
@@ -144,6 +164,33 @@ class Editor extends _$Editor {
       );
     }
 
+    _startSelection(cursor, extendSelection);
     state = state.copyWith(cursor: newCursor);
+    _updateSelection(newCursor, extendSelection);
+  }
+
+  void _startSelection(Cursor cursor, bool extendSelection) {
+    // Start a new selection.
+    if (state.selection == Selection.default_() && extendSelection) {
+      state = state.copyWith(
+        selection: Selection(start: cursor, end: cursor),
+      );
+    }
+  }
+
+  void _updateSelection(Cursor cursor, bool extendSelection) {
+    Selection newSelection = state.selection;
+
+    // Extend the selection if flag is set.
+    if (extendSelection) {
+      newSelection = Selection(start: newSelection.start, end: cursor);
+      state = state.copyWith(selection: newSelection);
+    } else {
+      clearSelection();
+    }
+  }
+
+  void clearSelection() {
+    state = state.copyWith(selection: Selection.default_());
   }
 }

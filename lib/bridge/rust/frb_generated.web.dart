@@ -8,10 +8,12 @@
 
 import 'api/buffer.dart';
 import 'api/cursor.dart';
+import 'api/selection.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated_web.dart';
+import 'package:meta/meta.dart' as meta;
 
 abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   RustLibApiImplPlatform({
@@ -56,6 +58,15 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   String dco_decode_String(dynamic raw);
 
   @protected
+  bool dco_decode_bool(dynamic raw);
+
+  @protected
+  Cursor dco_decode_box_autoadd_cursor(dynamic raw);
+
+  @protected
+  Selection dco_decode_box_autoadd_selection(dynamic raw);
+
+  @protected
   Cursor dco_decode_cursor(dynamic raw);
 
   @protected
@@ -65,6 +76,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   (int, int) dco_decode_record_casted_primitive_usize_casted_primitive_usize(
     dynamic raw,
   );
+
+  @protected
+  Selection dco_decode_selection(dynamic raw);
 
   @protected
   int dco_decode_u_8(dynamic raw);
@@ -106,6 +120,15 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   String sse_decode_String(SseDeserializer deserializer);
 
   @protected
+  bool sse_decode_bool(SseDeserializer deserializer);
+
+  @protected
+  Cursor sse_decode_box_autoadd_cursor(SseDeserializer deserializer);
+
+  @protected
+  Selection sse_decode_box_autoadd_selection(SseDeserializer deserializer);
+
+  @protected
   Cursor sse_decode_cursor(SseDeserializer deserializer);
 
   @protected
@@ -115,6 +138,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   (int, int) sse_decode_record_casted_primitive_usize_casted_primitive_usize(
     SseDeserializer deserializer,
   );
+
+  @protected
+  Selection sse_decode_selection(SseDeserializer deserializer);
 
   @protected
   int sse_decode_u_8(SseDeserializer deserializer);
@@ -127,9 +153,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   int sse_decode_i_32(SseDeserializer deserializer);
-
-  @protected
-  bool sse_decode_bool(SseDeserializer deserializer);
 
   @protected
   void
@@ -166,6 +189,18 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   void sse_encode_String(String self, SseSerializer serializer);
 
   @protected
+  void sse_encode_bool(bool self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_box_autoadd_cursor(Cursor self, SseSerializer serializer);
+
+  @protected
+  void sse_encode_box_autoadd_selection(
+    Selection self,
+    SseSerializer serializer,
+  );
+
+  @protected
   void sse_encode_cursor(Cursor self, SseSerializer serializer);
 
   @protected
@@ -181,6 +216,9 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
   );
 
   @protected
+  void sse_encode_selection(Selection self, SseSerializer serializer);
+
+  @protected
   void sse_encode_u_8(int self, SseSerializer serializer);
 
   @protected
@@ -191,9 +229,6 @@ abstract class RustLibApiImplPlatform extends BaseApiImpl<RustLibWire> {
 
   @protected
   void sse_encode_i_32(int self, SseSerializer serializer);
-
-  @protected
-  void sse_encode_bool(bool self, SseSerializer serializer);
 }
 
 // Section: wire_class

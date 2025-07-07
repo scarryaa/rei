@@ -5,18 +5,21 @@
 
 import '../frb_generated.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
+import 'package:freezed_annotation/freezed_annotation.dart' hide protected;
+import 'package:meta/meta.dart' as meta;
+part 'cursor.freezed.dart';
 
-class Cursor {
-  final int row;
-  final int column;
-  final int stickyColumn;
+// These function are ignored because they are on traits that is not defined in current crate (put an empty `#[frb]` on it to unignore): `clone`, `eq`
 
-  const Cursor.raw({
-    required this.row,
-    required this.column,
-    required this.stickyColumn,
-  });
-
+@freezed
+@meta.immutable
+sealed class Cursor with _$Cursor {
+  const Cursor._();
+  const factory Cursor.raw({
+    required int row,
+    required int column,
+    required int stickyColumn,
+  }) = _Cursor;
   static Cursor default_() =>
       RustLib.instance.api.crateApiCursorCursorDefault();
 
@@ -29,16 +32,4 @@ class Cursor {
     column: column,
     stickyColumn: stickyColumn,
   );
-
-  @override
-  int get hashCode => row.hashCode ^ column.hashCode ^ stickyColumn.hashCode;
-
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is Cursor &&
-          runtimeType == other.runtimeType &&
-          row == other.row &&
-          column == other.column &&
-          stickyColumn == other.stickyColumn;
 }

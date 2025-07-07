@@ -19,6 +19,8 @@ class EditorWidget extends HookConsumerWidget {
       return KeyEventResult.ignored;
     }
 
+    final bool isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
+
     switch (event.logicalKey) {
       case LogicalKeyboardKey.enter:
         notifier.insert('\n');
@@ -26,15 +28,18 @@ class EditorWidget extends HookConsumerWidget {
       case LogicalKeyboardKey.backspace:
         notifier.removeChar();
 
+      case LogicalKeyboardKey.escape:
+        notifier.clearSelection();
+
       // Arrow Keys
       case LogicalKeyboardKey.arrowLeft:
-        notifier.moveLeft();
+        notifier.moveLeft(isShiftPressed);
       case LogicalKeyboardKey.arrowRight:
-        notifier.moveRight();
+        notifier.moveRight(isShiftPressed);
       case LogicalKeyboardKey.arrowUp:
-        notifier.moveUp();
+        notifier.moveUp(isShiftPressed);
       case LogicalKeyboardKey.arrowDown:
-        notifier.moveDown();
+        notifier.moveDown(isShiftPressed);
 
       default:
         if (event.character != null) {
@@ -80,6 +85,7 @@ class EditorWidget extends HookConsumerWidget {
           textPainter: textPainter,
           buffer: state.buffer,
           cursor: state.cursor,
+          selection: state.selection,
         ),
       ),
     );

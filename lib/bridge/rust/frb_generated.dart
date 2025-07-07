@@ -5,12 +5,14 @@
 
 import 'api/buffer.dart';
 import 'api/cursor.dart';
+import 'api/selection.dart';
 import 'dart:async';
 import 'dart:convert';
 import 'frb_generated.dart';
 import 'frb_generated.io.dart'
     if (dart.library.js_interop) 'frb_generated.web.dart';
 import 'package:flutter_rust_bridge/flutter_rust_bridge_for_generated.dart';
+import 'package:meta/meta.dart' as meta;
 
 /// Main entrypoint of the Rust API
 class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
@@ -65,7 +67,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.11.1';
 
   @override
-  int get rustContentHash => 484971038;
+  int get rustContentHash => 562081614;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -122,6 +124,17 @@ abstract class RustLibApi extends BaseApi {
     required int column,
     required int stickyColumn,
   });
+
+  Selection crateApiSelectionSelectionDefault();
+
+  bool crateApiSelectionSelectionIsEmpty({required Selection that});
+
+  Selection crateApiSelectionSelectionNew({
+    required Cursor start,
+    required Cursor end,
+  });
+
+  Selection crateApiSelectionSelectionNormalized({required Selection that});
 
   RustArcIncrementStrongCountFnType get rust_arc_increment_strong_count_Buffer;
 
@@ -500,6 +513,107 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     argNames: ['row', 'column', 'stickyColumn'],
   );
 
+  @override
+  Selection crateApiSelectionSelectionDefault() {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 13)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_selection,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiSelectionSelectionDefaultConstMeta,
+        argValues: [],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSelectionSelectionDefaultConstMeta =>
+      const TaskConstMeta(debugName: 'selection_default', argNames: []);
+
+  @override
+  bool crateApiSelectionSelectionIsEmpty({required Selection that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_box_autoadd_selection(that, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 14)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_bool,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiSelectionSelectionIsEmptyConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSelectionSelectionIsEmptyConstMeta =>
+      const TaskConstMeta(debugName: 'selection_is_empty', argNames: ['that']);
+
+  @override
+  Selection crateApiSelectionSelectionNew({
+    required Cursor start,
+    required Cursor end,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_box_autoadd_cursor(start, serializer);
+          sse_encode_box_autoadd_cursor(end, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 15)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_selection,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiSelectionSelectionNewConstMeta,
+        argValues: [start, end],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSelectionSelectionNewConstMeta =>
+      const TaskConstMeta(
+        debugName: 'selection_new',
+        argNames: ['start', 'end'],
+      );
+
+  @override
+  Selection crateApiSelectionSelectionNormalized({required Selection that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_box_autoadd_selection(that, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 16)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_selection,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiSelectionSelectionNormalizedConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiSelectionSelectionNormalizedConstMeta =>
+      const TaskConstMeta(
+        debugName: 'selection_normalized',
+        argNames: ['that'],
+      );
+
   RustArcIncrementStrongCountFnType
   get rust_arc_increment_strong_count_Buffer => wire
       .rust_arc_increment_strong_count_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer;
@@ -559,6 +673,24 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  bool dco_decode_bool(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return raw as bool;
+  }
+
+  @protected
+  Cursor dco_decode_box_autoadd_cursor(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_cursor(raw);
+  }
+
+  @protected
+  Selection dco_decode_box_autoadd_selection(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    return dco_decode_selection(raw);
+  }
+
+  @protected
   Cursor dco_decode_cursor(dynamic raw) {
     // Codec=Dco (DartCObject based), see doc to use other codecs
     final arr = raw as List<dynamic>;
@@ -589,6 +721,18 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
     return (
       dco_decode_CastedPrimitive_usize(arr[0]),
       dco_decode_CastedPrimitive_usize(arr[1]),
+    );
+  }
+
+  @protected
+  Selection dco_decode_selection(dynamic raw) {
+    // Codec=Dco (DartCObject based), see doc to use other codecs
+    final arr = raw as List<dynamic>;
+    if (arr.length != 2)
+      throw Exception('unexpected arr length: expect 2 but see ${arr.length}');
+    return Selection.raw(
+      start: dco_decode_cursor(arr[0]),
+      end: dco_decode_cursor(arr[1]),
     );
   }
 
@@ -673,6 +817,24 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  bool sse_decode_bool(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return deserializer.buffer.getUint8() != 0;
+  }
+
+  @protected
+  Cursor sse_decode_box_autoadd_cursor(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_cursor(deserializer));
+  }
+
+  @protected
+  Selection sse_decode_box_autoadd_selection(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    return (sse_decode_selection(deserializer));
+  }
+
+  @protected
   Cursor sse_decode_cursor(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     var var_row = sse_decode_CastedPrimitive_usize(deserializer);
@@ -703,6 +865,14 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  Selection sse_decode_selection(SseDeserializer deserializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    var var_start = sse_decode_cursor(deserializer);
+    var var_end = sse_decode_cursor(deserializer);
+    return Selection.raw(start: var_start, end: var_end);
+  }
+
+  @protected
   int sse_decode_u_8(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getUint8();
@@ -723,12 +893,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   int sse_decode_i_32(SseDeserializer deserializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     return deserializer.buffer.getInt32();
-  }
-
-  @protected
-  bool sse_decode_bool(SseDeserializer deserializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    return deserializer.buffer.getUint8() != 0;
   }
 
   @protected
@@ -796,6 +960,27 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_bool(bool self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    serializer.buffer.putUint8(self ? 1 : 0);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_cursor(Cursor self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_cursor(self, serializer);
+  }
+
+  @protected
+  void sse_encode_box_autoadd_selection(
+    Selection self,
+    SseSerializer serializer,
+  ) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_selection(self, serializer);
+  }
+
+  @protected
   void sse_encode_cursor(Cursor self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     sse_encode_CastedPrimitive_usize(self.row, serializer);
@@ -824,6 +1009,13 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   }
 
   @protected
+  void sse_encode_selection(Selection self, SseSerializer serializer) {
+    // Codec=Sse (Serialization based), see doc to use other codecs
+    sse_encode_cursor(self.start, serializer);
+    sse_encode_cursor(self.end, serializer);
+  }
+
+  @protected
   void sse_encode_u_8(int self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putUint8(self);
@@ -844,12 +1036,6 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   void sse_encode_i_32(int self, SseSerializer serializer) {
     // Codec=Sse (Serialization based), see doc to use other codecs
     serializer.buffer.putInt32(self);
-  }
-
-  @protected
-  void sse_encode_bool(bool self, SseSerializer serializer) {
-    // Codec=Sse (Serialization based), see doc to use other codecs
-    serializer.buffer.putUint8(self ? 1 : 0);
   }
 }
 

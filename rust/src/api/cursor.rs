@@ -1,11 +1,20 @@
 use flutter_rust_bridge::frb;
 
-#[frb(type_64bit_int)]
+#[frb(dart_metadata=("freezed", "immutable" import "package:meta/meta.dart" as meta), type_64bit_int)]
+#[derive(Clone, Copy)]
 pub struct Cursor {
     pub row: usize,
     pub column: usize,
     pub sticky_column: usize,
 }
+
+impl PartialEq for Cursor {
+    fn eq(&self, other: &Self) -> bool {
+        self.row == other.row && self.column == other.column
+    }
+}
+
+impl Eq for Cursor {}
 
 impl Default for Cursor {
     #[frb(sync)]
