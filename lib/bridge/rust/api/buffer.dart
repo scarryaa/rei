@@ -28,7 +28,21 @@ abstract class Buffer implements RustOpaqueInterface {
 
   (int, int) removeChar({required int row, required int column});
 
+  (int, int) removeRange({
+    required int startRow,
+    required int startColumn,
+    required int endRow,
+    required int endColumn,
+  });
+
   int rowColumnToIdx({required int row, required int column});
+
+  String textInRange({
+    required int startRow,
+    required int startColumn,
+    required int endRow,
+    required int endColumn,
+  });
 
   @override
   String toString();

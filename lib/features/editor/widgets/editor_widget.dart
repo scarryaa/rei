@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -8,6 +10,62 @@ import 'package:rei/features/editor/widgets/painters/editor_painter.dart';
 
 class EditorWidget extends HookConsumerWidget {
   const EditorWidget({super.key});
+
+  void _handlePaste(EditorState state, Editor notifier) async {
+    final text = (await Clipboard.getData(Clipboard.kTextPlain))?.text;
+    if (text != null && text.isNotEmpty) {
+      notifier.insert(text);
+    }
+  }
+
+  bool _handleShortcuts(KeyEvent event, EditorState state, Editor notifier) {
+    bool isSuperPressed;
+    if (Platform.isMacOS) {
+      isSuperPressed = HardwareKeyboard.instance.isMetaPressed;
+    } else {
+      isSuperPressed = HardwareKeyboard.instance.isControlPressed;
+    }
+    bool handled = false;
+
+    switch (event.logicalKey) {
+      // Select All
+      case LogicalKeyboardKey.keyA:
+        if (isSuperPressed) {
+          notifier.selectAll();
+          handled = true;
+        }
+
+      // Cut
+      case LogicalKeyboardKey.keyX:
+        if (isSuperPressed) {
+          final text = notifier.getSelectedText();
+          if (text.isNotEmpty) {
+            Clipboard.setData(ClipboardData(text: text));
+          }
+          notifier.deleteSelection();
+          handled = true;
+        }
+
+      // Copy
+      case LogicalKeyboardKey.keyC:
+        if (isSuperPressed) {
+          final text = notifier.getSelectedText();
+          if (text.isNotEmpty) {
+            Clipboard.setData(ClipboardData(text: text));
+          }
+          handled = true;
+        }
+
+      // Paste
+      case LogicalKeyboardKey.keyV:
+        if (isSuperPressed) {
+          _handlePaste(state, notifier);
+          handled = true;
+        }
+    }
+
+    return handled;
+  }
 
   KeyEventResult _handleKeyEvent(
     FocusNode node,
@@ -20,6 +78,11 @@ class EditorWidget extends HookConsumerWidget {
     }
 
     final bool isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
+
+    // Handle shortcuts
+    if (_handleShortcuts(event, state, notifier)) {
+      return KeyEventResult.handled;
+    }
 
     switch (event.logicalKey) {
       case LogicalKeyboardKey.enter:

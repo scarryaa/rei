@@ -43,6 +43,37 @@ impl Buffer {
     }
 
     #[frb(sync, type_64bit_int)]
+    pub fn remove_range(
+        &mut self,
+        start_row: usize,
+        start_column: usize,
+        end_row: usize,
+        end_column: usize,
+    ) -> (usize, usize) {
+        let start_idx = self.row_column_to_idx(start_row, start_column);
+        let end_idx = self.row_column_to_idx(end_row, end_column);
+
+        self.text.delete(start_idx..end_idx);
+        self.version += 1;
+
+        (start_row, start_column)
+    }
+
+    #[frb(sync, type_64bit_int)]
+    pub fn text_in_range(
+        &self,
+        start_row: usize,
+        start_column: usize,
+        end_row: usize,
+        end_column: usize,
+    ) -> String {
+        let start_idx = self.row_column_to_idx(start_row, start_column);
+        let end_idx = self.row_column_to_idx(end_row, end_column);
+
+        self.text.byte_slice(start_idx..end_idx).to_string()
+    }
+
+    #[frb(sync, type_64bit_int)]
     pub fn row_column_to_idx(&self, row: usize, column: usize) -> usize {
         let line_start_idx = self.text.byte_of_line(row);
         line_start_idx + column

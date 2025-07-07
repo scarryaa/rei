@@ -21,7 +21,7 @@ class Editor extends _$Editor {
 
   void insert(String text) {
     if (!state.selection.isEmpty()) {
-      // Delete selection.
+      deleteSelection();
     }
 
     final cursor = state.cursor;
@@ -41,7 +41,7 @@ class Editor extends _$Editor {
 
   void removeChar() {
     if (!state.selection.isEmpty()) {
-      // Delete selection.
+      deleteSelection();
       return;
     }
 
@@ -192,5 +192,71 @@ class Editor extends _$Editor {
 
   void clearSelection() {
     state = state.copyWith(selection: Selection.default_());
+  }
+
+  void removeRange(int startRow, int startColumn, int endRow, int endColumn) {
+    final (newRow, newColumn) = state.buffer.removeRange(
+      startRow: startRow,
+      startColumn: startColumn,
+      endRow: endRow,
+      endColumn: endColumn,
+    );
+    final newCursor = Cursor(
+      row: newRow,
+      column: newColumn,
+      stickyColumn: newColumn,
+    );
+
+    state = state.copyWith(buffer: state.buffer, cursor: newCursor);
+  }
+
+  void deleteSelection() {
+    final normalized = state.selection.normalized();
+
+    removeRange(
+      normalized.start.row,
+      normalized.start.column,
+      normalized.end.row,
+      normalized.end.column,
+    );
+    clearSelection();
+  }
+
+  void selectAll() {
+    final lineCount = state.buffer.lineCount() - 1;
+    final lastLineLength = state.buffer.lineLen(row: lineCount);
+    final endCursor = Cursor(
+      row: lineCount,
+      column: lastLineLength,
+      stickyColumn: lastLineLength,
+    );
+    final newSelection = Selection(start: Cursor.default_(), end: endCursor);
+
+    state = state.copyWith(selection: newSelection, cursor: endCursor);
+  }
+
+  String getTextInRange(
+    int startRow,
+    int startColumn,
+    int endRow,
+    int endColumn,
+  ) {
+    return state.buffer.textInRange(
+      startRow: startRow,
+      startColumn: startColumn,
+      endRow: endRow,
+      endColumn: endColumn,
+    );
+  }
+
+  String getSelectedText() {
+    final normalized = state.selection.normalized();
+
+    return getTextInRange(
+      normalized.start.row,
+      normalized.start.column,
+      normalized.end.row,
+      normalized.end.column,
+    );
   }
 }
