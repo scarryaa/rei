@@ -1,5 +1,5 @@
+use crop::Rope;
 use flutter_rust_bridge::frb;
-use ropey::Rope;
 
 #[frb(type_64bit_int)]
 pub struct Buffer {
@@ -34,7 +34,7 @@ impl Buffer {
             return (row, column);
         }
 
-        self.text.remove(char_idx - 1..char_idx);
+        self.text.delete(char_idx - 1..char_idx);
         self.version += 1;
 
         let new_idx = char_idx - 1;
@@ -44,26 +44,26 @@ impl Buffer {
 
     #[frb(sync, type_64bit_int)]
     pub fn row_column_to_idx(&self, row: usize, column: usize) -> usize {
-        let line_start_idx = self.text.line_to_char(row);
+        let line_start_idx = self.text.byte_of_line(row);
         line_start_idx + column
     }
 
     #[frb(sync, type_64bit_int)]
     pub fn idx_to_row_column(&self, idx: usize) -> (usize, usize) {
-        let row = self.text.char_to_line(idx);
-        let line_idx = self.text.line_to_char(row);
+        let row = self.text.line_of_byte(idx);
+        let line_idx = self.text.byte_of_line(row);
         let column = idx - line_idx;
         (row, column)
     }
 
     #[frb(sync, type_64bit_int)]
     pub fn line_count(&self) -> usize {
-        self.text.len_lines()
+        self.text.line_len()
     }
 
     #[frb(sync, type_64bit_int)]
     pub fn line_len(&self, row: usize) -> usize {
-        self.text.line(row).len_chars()
+        self.text.line(row).byte_len()
     }
 
     #[frb(sync)]
