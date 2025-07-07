@@ -13,6 +13,7 @@ class EditorPainter extends CustomPainter {
     required this.cursor,
     required this.selection,
     required this.fontMetrics,
+    required this.firstVisibleLine,
   });
 
   final TextPainter textPainter;
@@ -20,6 +21,7 @@ class EditorPainter extends CustomPainter {
   final Cursor cursor;
   final Selection selection;
   final FontMetrics fontMetrics;
+  final int firstVisibleLine;
 
   static final Color cursorColor = Colors.lightBlue;
   static final Color selectionColor = Colors.lightBlue.withValues(alpha: 0.3);
@@ -28,6 +30,7 @@ class EditorPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     canvas.clipRect(Rect.fromLTWH(0, 0, size.width, size.height));
+    canvas.translate(0, firstVisibleLine * fontMetrics.lineHeight);
 
     drawSelection(canvas, size);
     drawText(canvas, size);
@@ -103,6 +106,7 @@ class EditorPainter extends CustomPainter {
     return oldDelegate.buffer.version != buffer.version ||
         oldDelegate.textPainter != textPainter ||
         oldDelegate.cursor != cursor ||
-        oldDelegate.selection != selection;
+        oldDelegate.selection != selection ||
+        oldDelegate.firstVisibleLine != firstVisibleLine;
   }
 }

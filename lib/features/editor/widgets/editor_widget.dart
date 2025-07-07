@@ -122,6 +122,20 @@ class EditorWidget extends HookConsumerWidget {
     final notifier = ref.read(editorProvider.notifier);
     final verticalScrollController = useScrollController();
     final horizontalScrollController = useScrollController();
+    final verticalOffset = useState(0.0);
+
+    useEffect(() {
+      verticalScrollController.addListener(
+        () => verticalOffset.value = min(
+          verticalScrollController.offset,
+          verticalScrollController.position.maxScrollExtent,
+        ),
+      );
+      return null;
+    });
+
+    useListenable(verticalScrollController);
+    useListenable(horizontalScrollController);
 
     final textStyle = useMemoized(
       () => TextStyle(
@@ -130,16 +144,6 @@ class EditorWidget extends HookConsumerWidget {
         color: Colors.white,
       ),
     );
-
-    final textPainter = useMemoized(() {
-      final innerTextPainter = TextPainter(
-        textDirection: TextDirection.ltr,
-        text: TextSpan(text: state.buffer.toString(), style: textStyle),
-      );
-      innerTextPainter.layout();
-
-      return innerTextPainter;
-    }, [state.buffer.version]);
 
     final fontMetrics = useMemoized(() {
       final innerCharPainter = TextPainter(
@@ -153,6 +157,47 @@ class EditorWidget extends HookConsumerWidget {
         charWidth: innerCharPainter.width,
       );
     }, [textStyle]);
+
+    final visibleLines = useMemoized(() {
+      if (!verticalScrollController.hasClients ||
+          !verticalScrollController.position.hasViewportDimension) {
+        return (first: 0, last: 0);
+      }
+
+      final viewportHeight =
+          verticalScrollController.position.viewportDimension;
+      final firstVisibleLine = min(
+        max(0, ((verticalOffset.value) / fontMetrics.lineHeight).floor()),
+        state.buffer.lineCount() - 1,
+      );
+      final lastVisibleLine = min(
+        ((verticalOffset.value + viewportHeight) / fontMetrics.lineHeight)
+            .ceil(),
+        state.buffer.lineCount() - 1,
+      );
+
+      return (first: firstVisibleLine, last: lastVisibleLine);
+    }, [state.buffer.version, state.cursor, verticalOffset.value]);
+
+    final textPainter = useMemoized(() {
+      final lineLength = state.buffer.lineLen(row: visibleLines.last);
+
+      final innerTextPainter = TextPainter(
+        textDirection: TextDirection.ltr,
+        text: TextSpan(
+          text: state.buffer.textInRange(
+            startRow: visibleLines.first,
+            startColumn: 0,
+            endRow: visibleLines.last,
+            endColumn: lineLength,
+          ),
+          style: textStyle,
+        ),
+      );
+      innerTextPainter.layout();
+
+      return innerTextPainter;
+    }, [state.buffer.version, visibleLines]);
 
     final padding = useMemoized(() {
       final verticalMultiplier = 5.0;
@@ -213,6 +258,7 @@ class EditorWidget extends HookConsumerWidget {
                           cursor: state.cursor,
                           selection: state.selection,
                           fontMetrics: fontMetrics,
+                          firstVisibleLine: visibleLines.first,
                         ),
                       ),
                     ),
