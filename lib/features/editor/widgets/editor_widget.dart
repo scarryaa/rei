@@ -152,18 +152,22 @@ class EditorWidget extends HookConsumerWidget {
     }, [textStyle]);
 
     return Focus(
+      autofocus: true,
       focusNode: focusNode,
       onKeyEvent: (node, event) =>
           _handleKeyEvent(node, event, state, notifier),
-      child: CustomPaint(
-        willChange: true,
-        isComplex: true,
-        painter: EditorPainter(
-          textPainter: textPainter,
-          buffer: state.buffer,
-          cursor: state.cursor,
-          selection: state.selection,
-          fontMetrics: fontMetrics,
+      child: MouseRegion(
+        cursor: SystemMouseCursors.text,
+        child: CustomPaint(
+          willChange: true,
+          isComplex: true,
+          painter: EditorPainter(
+            textPainter: textPainter,
+            buffer: state.buffer,
+            cursor: state.cursor,
+            selection: state.selection,
+            fontMetrics: fontMetrics,
+          ),
         ),
       ),
     );
