@@ -66,7 +66,11 @@ class EditorWidget extends HookConsumerWidget {
       child: CustomPaint(
         willChange: true,
         isComplex: true,
-        painter: EditorPainter(textPainter: textPainter, buffer: state.buffer),
+        painter: EditorPainter(
+          textPainter: textPainter,
+          buffer: state.buffer,
+          cursor: state.cursor,
+        ),
       ),
     );
   }
