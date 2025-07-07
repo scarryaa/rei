@@ -23,6 +23,9 @@ class EditorWidget extends HookConsumerWidget {
       case LogicalKeyboardKey.enter:
         notifier.insert('\n');
 
+      case LogicalKeyboardKey.backspace:
+        notifier.removeChar();
+
       default:
         if (event.character != null) {
           notifier.insert(event.character!);

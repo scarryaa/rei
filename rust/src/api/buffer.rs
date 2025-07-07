@@ -28,6 +28,21 @@ impl Buffer {
     }
 
     #[frb(sync, type_64bit_int)]
+    pub fn remove_char(&mut self, row: usize, column: usize) -> (usize, usize) {
+        let char_idx = self.row_column_to_idx(row, column);
+        if char_idx == 0 {
+            return (row, column);
+        }
+
+        self.text.remove(char_idx - 1..char_idx);
+        self.version += 1;
+
+        let new_idx = char_idx - 1;
+        let (new_row, new_column) = self.idx_to_row_column(new_idx);
+        (new_row, new_column)
+    }
+
+    #[frb(sync, type_64bit_int)]
     pub fn row_column_to_idx(&self, row: usize, column: usize) -> usize {
         let line_start_idx = self.text.line_to_char(row);
         line_start_idx + column

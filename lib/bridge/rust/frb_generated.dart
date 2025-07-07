@@ -65,7 +65,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.11.1';
 
   @override
-  int get rustContentHash => -851805047;
+  int get rustContentHash => -1109646910;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -96,6 +96,12 @@ abstract class RustLibApi extends BaseApi {
   });
 
   Buffer crateApiBufferBufferNew();
+
+  (int, int) crateApiBufferBufferRemoveChar({
+    required Buffer that,
+    required int row,
+    required int column,
+  });
 
   int crateApiBufferBufferRowColumnToIdx({
     required Buffer that,
@@ -285,6 +291,42 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       const TaskConstMeta(debugName: 'Buffer_new', argNames: []);
 
   @override
+  (int, int) crateApiBufferBufferRemoveChar({
+    required Buffer that,
+    required int row,
+    required int column,
+  }) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_RefMut_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+            that,
+            serializer,
+          );
+          sse_encode_CastedPrimitive_usize(row, serializer);
+          sse_encode_CastedPrimitive_usize(column, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 6)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData:
+              sse_decode_record_casted_primitive_usize_casted_primitive_usize,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiBufferBufferRemoveCharConstMeta,
+        argValues: [that, row, column],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiBufferBufferRemoveCharConstMeta =>
+      const TaskConstMeta(
+        debugName: 'Buffer_remove_char',
+        argNames: ['that', 'row', 'column'],
+      );
+
+  @override
   int crateApiBufferBufferRowColumnToIdx({
     required Buffer that,
     required int row,
@@ -300,7 +342,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
           sse_encode_CastedPrimitive_usize(row, serializer);
           sse_encode_CastedPrimitive_usize(column, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 6)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 7)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_CastedPrimitive_usize,
@@ -329,7 +371,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 7)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 8)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
@@ -351,7 +393,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       SyncTask(
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 8)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 9)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_cursor,
@@ -380,7 +422,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_CastedPrimitive_usize(row, serializer);
           sse_encode_CastedPrimitive_usize(column, serializer);
           sse_encode_CastedPrimitive_usize(stickyColumn, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 9)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 10)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_cursor,
@@ -789,6 +831,11 @@ class BufferImpl extends RustOpaque implements Buffer {
     column: column,
     text: text,
   );
+
+  (int, int) removeChar({required int row, required int column}) => RustLib
+      .instance
+      .api
+      .crateApiBufferBufferRemoveChar(that: this, row: row, column: column);
 
   int rowColumnToIdx({required int row, required int column}) => RustLib
       .instance

@@ -27,4 +27,22 @@ class Editor extends _$Editor {
 
     state = state.copyWith(buffer: state.buffer, cursor: newCursor);
   }
+
+  void removeChar() {
+    final cursor = state.cursor;
+
+    if (cursor.row == 0 && cursor.column == 0) return;
+
+    final (newRow, newColumn) = state.buffer.removeChar(
+      row: cursor.row,
+      column: cursor.column,
+    );
+    final newCursor = Cursor(
+      row: newRow,
+      column: newColumn,
+      stickyColumn: newColumn,
+    );
+
+    state = state.copyWith(buffer: state.buffer, cursor: newCursor);
+  }
 }

@@ -22,6 +22,8 @@ abstract class Buffer implements RustOpaqueInterface {
 
   factory Buffer() => RustLib.instance.api.crateApiBufferBufferNew();
 
+  (int, int) removeChar({required int row, required int column});
+
   int rowColumnToIdx({required int row, required int column});
 
   @override
