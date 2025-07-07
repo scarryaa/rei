@@ -26,6 +26,16 @@ class EditorWidget extends HookConsumerWidget {
       case LogicalKeyboardKey.backspace:
         notifier.removeChar();
 
+      // Arrow Keys
+      case LogicalKeyboardKey.arrowLeft:
+        notifier.moveLeft();
+      case LogicalKeyboardKey.arrowRight:
+        notifier.moveRight();
+      case LogicalKeyboardKey.arrowUp:
+        notifier.moveUp();
+      case LogicalKeyboardKey.arrowDown:
+        notifier.moveDown();
+
       default:
         if (event.character != null) {
           notifier.insert(event.character!);

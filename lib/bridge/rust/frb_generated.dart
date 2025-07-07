@@ -65,7 +65,7 @@ class RustLib extends BaseEntrypoint<RustLibApi, RustLibApiImpl, RustLibWire> {
   String get codegenVersion => '2.11.1';
 
   @override
-  int get rustContentHash => -1109646910;
+  int get rustContentHash => 484971038;
 
   static const kDefaultExternalLibraryLoaderConfig =
       ExternalLibraryLoaderConfig(
@@ -94,6 +94,10 @@ abstract class RustLibApi extends BaseApi {
     required int column,
     required String text,
   });
+
+  int crateApiBufferBufferLineCount({required Buffer that});
+
+  int crateApiBufferBufferLineLen({required Buffer that, required int row});
 
   Buffer crateApiBufferBufferNew();
 
@@ -268,12 +272,68 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
   );
 
   @override
+  int crateApiBufferBufferLineCount({required Buffer that}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+            that,
+            serializer,
+          );
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 5)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_CastedPrimitive_usize,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiBufferBufferLineCountConstMeta,
+        argValues: [that],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiBufferBufferLineCountConstMeta =>
+      const TaskConstMeta(debugName: 'Buffer_line_count', argNames: ['that']);
+
+  @override
+  int crateApiBufferBufferLineLen({required Buffer that, required int row}) {
+    return handler.executeSync(
+      SyncTask(
+        callFfi: () {
+          final serializer = SseSerializer(generalizedFrbRustBinding);
+          sse_encode_Auto_Ref_RustOpaque_flutter_rust_bridgefor_generatedRustAutoOpaqueInnerBuffer(
+            that,
+            serializer,
+          );
+          sse_encode_CastedPrimitive_usize(row, serializer);
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 6)!;
+        },
+        codec: SseCodec(
+          decodeSuccessData: sse_decode_CastedPrimitive_usize,
+          decodeErrorData: null,
+        ),
+        constMeta: kCrateApiBufferBufferLineLenConstMeta,
+        argValues: [that, row],
+        apiImpl: this,
+      ),
+    );
+  }
+
+  TaskConstMeta get kCrateApiBufferBufferLineLenConstMeta =>
+      const TaskConstMeta(
+        debugName: 'Buffer_line_len',
+        argNames: ['that', 'row'],
+      );
+
+  @override
   Buffer crateApiBufferBufferNew() {
     return handler.executeSync(
       SyncTask(
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 5)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 7)!;
         },
         codec: SseCodec(
           decodeSuccessData:
@@ -306,7 +366,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
           sse_encode_CastedPrimitive_usize(row, serializer);
           sse_encode_CastedPrimitive_usize(column, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 6)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 8)!;
         },
         codec: SseCodec(
           decodeSuccessData:
@@ -342,7 +402,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           );
           sse_encode_CastedPrimitive_usize(row, serializer);
           sse_encode_CastedPrimitive_usize(column, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 7)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 9)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_CastedPrimitive_usize,
@@ -371,7 +431,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
             that,
             serializer,
           );
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 8)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 10)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_String,
@@ -393,7 +453,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
       SyncTask(
         callFfi: () {
           final serializer = SseSerializer(generalizedFrbRustBinding);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 9)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 11)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_cursor,
@@ -422,7 +482,7 @@ class RustLibApiImpl extends RustLibApiImplPlatform implements RustLibApi {
           sse_encode_CastedPrimitive_usize(row, serializer);
           sse_encode_CastedPrimitive_usize(column, serializer);
           sse_encode_CastedPrimitive_usize(stickyColumn, serializer);
-          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 10)!;
+          return pdeCallFfi(generalizedFrbRustBinding, serializer, funcId: 12)!;
         },
         codec: SseCodec(
           decodeSuccessData: sse_decode_cursor,
@@ -831,6 +891,12 @@ class BufferImpl extends RustOpaque implements Buffer {
     column: column,
     text: text,
   );
+
+  int lineCount() =>
+      RustLib.instance.api.crateApiBufferBufferLineCount(that: this);
+
+  int lineLen({required int row}) =>
+      RustLib.instance.api.crateApiBufferBufferLineLen(that: this, row: row);
 
   (int, int) removeChar({required int row, required int column}) => RustLib
       .instance

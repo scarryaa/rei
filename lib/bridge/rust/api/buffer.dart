@@ -20,6 +20,10 @@ abstract class Buffer implements RustOpaqueInterface {
     required String text,
   });
 
+  int lineCount();
+
+  int lineLen({required int row});
+
   factory Buffer() => RustLib.instance.api.crateApiBufferBufferNew();
 
   (int, int) removeChar({required int row, required int column});

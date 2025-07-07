@@ -56,6 +56,16 @@ impl Buffer {
         (row, column)
     }
 
+    #[frb(sync, type_64bit_int)]
+    pub fn line_count(&self) -> usize {
+        self.text.len_lines()
+    }
+
+    #[frb(sync, type_64bit_int)]
+    pub fn line_len(&self, row: usize) -> usize {
+        self.text.line(row).len_chars()
+    }
+
     #[frb(sync)]
     pub fn to_string(&self) -> String {
         self.text.to_string()
