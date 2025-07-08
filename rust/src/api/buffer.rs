@@ -109,6 +109,10 @@ impl Buffer {
         end_row: usize,
         end_column: usize,
     ) -> String {
+        if self.line_count() == 0 {
+            return "".to_string();
+        }
+
         let start_idx = self.row_column_to_idx(start_row, start_column);
         let end_idx = self.row_column_to_idx(end_row, end_column);
 

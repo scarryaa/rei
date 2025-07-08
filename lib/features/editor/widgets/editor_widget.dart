@@ -168,12 +168,12 @@ class EditorWidget extends HookConsumerWidget {
           verticalScrollController.position.viewportDimension;
       final firstVisibleLine = min(
         max(0, ((verticalOffset.value) / fontMetrics.lineHeight).floor()),
-        state.buffer.lineCount() - 1,
+        state.buffer.lineCount(),
       );
       final lastVisibleLine = min(
         ((verticalOffset.value + viewportHeight) / fontMetrics.lineHeight)
             .ceil(),
-        state.buffer.lineCount() - 1,
+        state.buffer.lineCount(),
       );
 
       return (first: firstVisibleLine, last: lastVisibleLine);
