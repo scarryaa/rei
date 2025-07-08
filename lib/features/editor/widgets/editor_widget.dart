@@ -125,14 +125,34 @@ class EditorWidget extends HookConsumerWidget {
     final verticalOffset = useState(0.0);
 
     useEffect(() {
-      verticalScrollController.addListener(
-        () => verticalOffset.value = min(
+      void updateVerticalOffset() {
+        if (!verticalScrollController.hasClients ||
+            !verticalScrollController.position.hasContentDimensions) {
+          return;
+        }
+
+        final newOffset = min(
           verticalScrollController.offset,
           verticalScrollController.position.maxScrollExtent,
-        ),
-      );
-      return null;
-    });
+        );
+
+        if (verticalOffset.value != newOffset) {
+          verticalOffset.value = newOffset;
+        }
+      }
+
+      void scrollListener() {
+        updateVerticalOffset();
+      }
+
+      verticalScrollController.addListener(scrollListener);
+
+      updateVerticalOffset();
+
+      return () {
+        verticalScrollController.removeListener(scrollListener);
+      };
+    }, [state.buffer.version, state.cursor]);
 
     useListenable(verticalScrollController);
     useListenable(horizontalScrollController);
@@ -166,9 +186,12 @@ class EditorWidget extends HookConsumerWidget {
 
       final viewportHeight =
           verticalScrollController.position.viewportDimension;
-      final firstVisibleLine = min(
-        max(0, ((verticalOffset.value) / fontMetrics.lineHeight).floor()),
-        state.buffer.lineCount(),
+      final firstVisibleLine = max(
+        0,
+        min(
+          ((verticalOffset.value) / fontMetrics.lineHeight).floor(),
+          state.buffer.lineCount() - 1,
+        ),
       );
       final lastVisibleLine = min(
         ((verticalOffset.value + viewportHeight) / fontMetrics.lineHeight)
