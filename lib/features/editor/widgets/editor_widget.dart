@@ -419,25 +419,30 @@ class EditorWidget extends HookConsumerWidget {
 
       final viewportHeight =
           verticalScrollController.position.viewportDimension;
+      double verticalOffset;
+      if (verticalScrollController.offset + viewportHeight > size.height) {
+        verticalOffset = size.height - viewportHeight;
+      } else {
+        verticalOffset = verticalScrollController.offset;
+      }
+
       final firstVisibleLine = max(
         0,
         min(
-          ((verticalScrollController.offset) / fontMetrics.lineHeight).floor(),
+          ((verticalOffset) / fontMetrics.lineHeight).floor(),
           state.buffer.lineCount() - 1,
         ),
       );
       final lastVisibleLine = max(
         0,
         min(
-          ((verticalScrollController.offset + viewportHeight) /
-                  fontMetrics.lineHeight)
-              .ceil(),
+          ((verticalOffset + viewportHeight) / fontMetrics.lineHeight).ceil(),
           state.buffer.lineCount(),
         ),
       );
 
       return (first: firstVisibleLine, last: lastVisibleLine);
-    }, [state.buffer.version, state.cursor, verticalOffset.value]);
+    }, [state.buffer.version, state.cursor, verticalOffset.value, size]);
 
     final visibleChars = useMemoized(() {
       if (!verticalScrollController.hasClients ||
