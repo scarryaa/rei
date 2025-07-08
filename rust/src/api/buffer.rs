@@ -1,7 +1,6 @@
-use std::collections::{BTreeMap, BTreeSet};
-
 use crop::Rope;
 use flutter_rust_bridge::frb;
+use std::collections::{BTreeMap, BTreeSet};
 
 #[frb(type_64bit_int)]
 pub struct Buffer {
@@ -38,30 +37,9 @@ impl Buffer {
         let new_idx = char_idx + text.chars().count();
         let (new_row, new_column) = self.idx_to_row_column(new_idx);
 
-        self.update_line_lengths(row, new_row);
+        self.update_line_lengths_range(row, new_row);
 
         (new_row, new_column)
-    }
-
-    fn update_line_lengths(&mut self, start_row: usize, end_row: usize) {
-        if start_row == end_row {
-            self.update_single_line_length(start_row);
-        } else {
-            for i in start_row..=end_row {
-                self.update_single_line_length(i);
-            }
-        }
-    }
-
-    fn update_single_line_length(&mut self, row: usize) {
-        if let Some(&old_length) = self.line_lengths.get(&row) {
-            self.length_index_set.remove(&(old_length, row));
-        }
-
-        let new_length = self.actual_line_len(row);
-
-        self.line_lengths.insert(row, new_length);
-        self.length_index_set.insert((new_length, row));
     }
 
     #[frb(sync, type_64bit_int)]
@@ -77,7 +55,7 @@ impl Buffer {
         let new_idx = char_idx - 1;
         let (new_row, new_column) = self.idx_to_row_column(new_idx);
 
-        self.update_line_lengths(row, new_row);
+        self.update_line_lengths_range(new_row.min(row), new_row.max(row));
 
         (new_row, new_column)
     }
@@ -105,11 +83,57 @@ impl Buffer {
         if should_clear {
             self.line_lengths.clear();
             self.length_index_set.clear();
+
+            if self.text.byte_len() == 0 {
+                self.line_lengths.insert(0, 0);
+                self.length_index_set.insert((0, 0));
+            }
         } else {
-            self.update_line_lengths(start_row, end_row);
+            self.rebuild_line_lengths_from(start_row);
         }
 
         (start_row, start_column)
+    }
+
+    fn update_line_lengths_range(&mut self, start_row: usize, end_row: usize) {
+        for row in start_row..=end_row {
+            self.update_single_line_length(row);
+        }
+    }
+
+    fn update_single_line_length(&mut self, row: usize) {
+        let new_length = self.actual_line_len(row);
+
+        if let Some(&old_length) = self.line_lengths.get(&row) {
+            if old_length != new_length {
+                self.length_index_set.remove(&(old_length, row));
+                self.length_index_set.insert((new_length, row));
+            }
+        } else {
+            self.length_index_set.insert((new_length, row));
+        }
+
+        self.line_lengths.insert(row, new_length);
+    }
+
+    fn rebuild_line_lengths_from(&mut self, start_row: usize) {
+        let keys_to_remove: Vec<usize> = self
+            .line_lengths
+            .range(start_row..)
+            .map(|(&row, &length)| {
+                self.length_index_set.remove(&(length, row));
+                row
+            })
+            .collect();
+
+        for row in keys_to_remove {
+            self.line_lengths.remove(&row);
+        }
+
+        let line_count = self.line_count();
+        for row in start_row..line_count {
+            self.update_single_line_length(row);
+        }
     }
 
     #[frb(sync, type_64bit_int)]
