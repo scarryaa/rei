@@ -14,6 +14,8 @@ class EditorPainter extends CustomPainter {
     required this.selection,
     required this.fontMetrics,
     required this.firstVisibleLine,
+    required this.firstVisibleCharIndex,
+    required this.lastVisibleCharIndex,
   });
 
   final TextPainter textPainter;
@@ -22,6 +24,8 @@ class EditorPainter extends CustomPainter {
   final Selection selection;
   final FontMetrics fontMetrics;
   final int firstVisibleLine;
+  final int firstVisibleCharIndex;
+  final int lastVisibleCharIndex;
 
   static final Color cursorColor = Colors.lightBlue;
   static final Color selectionColor = Colors.lightBlue.withValues(alpha: 0.3);
@@ -46,7 +50,7 @@ class EditorPainter extends CustomPainter {
       row: cursor.row,
       column: cursor.column,
     );
-    final position = TextPosition(offset: offset);
+    final position = TextPosition(offset: offset - firstVisibleCharIndex);
     final cursorOffset = textPainter.getOffsetForCaret(position, Rect.zero);
     final rect = Rect.fromLTWH(
       cursorOffset.dx,
@@ -70,8 +74,27 @@ class EditorPainter extends CustomPainter {
       column: normalized.end.column,
     );
 
+    if (baseOffset == extentOffset) return;
+
+    int adjustedBaseOffset;
+    if (baseOffset < firstVisibleCharIndex) {
+      adjustedBaseOffset = 0;
+    } else {
+      adjustedBaseOffset = baseOffset - firstVisibleCharIndex;
+    }
+
+    int adjustedExtentOffset;
+    if (extentOffset > lastVisibleCharIndex) {
+      adjustedExtentOffset = lastVisibleCharIndex;
+    } else {
+      adjustedExtentOffset = extentOffset - firstVisibleCharIndex;
+    }
+
     final boxes = textPainter.getBoxesForSelection(
-      TextSelection(baseOffset: baseOffset, extentOffset: extentOffset),
+      TextSelection(
+        baseOffset: adjustedBaseOffset,
+        extentOffset: adjustedExtentOffset,
+      ),
       boxHeightStyle: BoxHeightStyle.max,
     );
 

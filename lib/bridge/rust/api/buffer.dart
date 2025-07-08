@@ -14,6 +14,8 @@ abstract class Buffer implements RustOpaqueInterface {
 
   set version(int version);
 
+  int byteOfLine({required int row});
+
   (int, int) idxToRowColumn({required int idx});
 
   (int, int) insert({

@@ -326,6 +326,21 @@ class EditorWidget extends HookConsumerWidget {
       return (first: firstVisibleLine, last: lastVisibleLine);
     }, [state.buffer.version, state.cursor, verticalOffset.value]);
 
+    final visibleChars = useMemoized(() {
+      if (!verticalScrollController.hasClients ||
+          !verticalScrollController.position.hasViewportDimension ||
+          state.buffer.lineCount() == 0) {
+        return (first: 0, last: 0);
+      }
+
+      final firstChar = state.buffer.byteOfLine(row: visibleLines.first);
+      final lastChar =
+          state.buffer.byteOfLine(row: visibleLines.last - 1) +
+          state.buffer.lineLen(row: visibleLines.last - 1);
+
+      return (first: firstChar, last: lastChar);
+    }, [visibleLines, state.buffer.version]);
+
     final textPainter = useMemoized(() {
       final lineLength = state.buffer.lineLen(row: visibleLines.last);
 
@@ -387,6 +402,8 @@ class EditorWidget extends HookConsumerWidget {
                           selection: state.selection,
                           fontMetrics: fontMetrics,
                           firstVisibleLine: visibleLines.first,
+                          firstVisibleCharIndex: visibleChars.first,
+                          lastVisibleCharIndex: visibleChars.last,
                         ),
                       ),
                     ),

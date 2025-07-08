@@ -141,6 +141,11 @@ impl Buffer {
     }
 
     #[frb(sync, type_64bit_int)]
+    pub fn byte_of_line(&self, row: usize) -> usize {
+        self.text.byte_of_line(row)
+    }
+
+    #[frb(sync, type_64bit_int)]
     pub fn idx_to_row_column(&self, idx: usize) -> (usize, usize) {
         if self.line_count() == 0 {
             return (0, 0);
