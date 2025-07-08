@@ -91,12 +91,23 @@ impl Buffer {
         end_column: usize,
     ) -> (usize, usize) {
         let start_idx = self.row_column_to_idx(start_row, start_column);
-        let end_idx = self.row_column_to_idx(end_row, end_column);
+        let mut end_idx = self.row_column_to_idx(end_row, end_column);
+        let should_clear =
+            self.line_count() == 0 || self.line_count() - 1 == end_row && start_row == 0;
+
+        if should_clear {
+            end_idx = self.text.byte_len();
+        }
 
         self.text.delete(start_idx..end_idx);
         self.version += 1;
 
-        self.update_line_lengths(start_row, end_row);
+        if should_clear {
+            self.line_lengths.clear();
+            self.length_index_set.clear();
+        } else {
+            self.update_line_lengths(start_row, end_row);
+        }
 
         (start_row, start_column)
     }
@@ -121,12 +132,20 @@ impl Buffer {
 
     #[frb(sync, type_64bit_int)]
     pub fn row_column_to_idx(&self, row: usize, column: usize) -> usize {
+        if self.line_count() == 0 {
+            return 0;
+        }
+
         let line_start_idx = self.text.byte_of_line(row);
         line_start_idx + column
     }
 
     #[frb(sync, type_64bit_int)]
     pub fn idx_to_row_column(&self, idx: usize) -> (usize, usize) {
+        if self.line_count() == 0 {
+            return (0, 0);
+        }
+
         let row = self.text.line_of_byte(idx);
         let line_idx = self.text.byte_of_line(row);
         let column = idx - line_idx;

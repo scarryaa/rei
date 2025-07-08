@@ -193,10 +193,13 @@ class EditorWidget extends HookConsumerWidget {
           state.buffer.lineCount() - 1,
         ),
       );
-      final lastVisibleLine = min(
-        ((verticalOffset.value + viewportHeight) / fontMetrics.lineHeight)
-            .ceil(),
-        state.buffer.lineCount(),
+      final lastVisibleLine = max(
+        0,
+        min(
+          ((verticalOffset.value + viewportHeight) / fontMetrics.lineHeight)
+              .ceil(),
+          state.buffer.lineCount(),
+        ),
       );
 
       return (first: firstVisibleLine, last: lastVisibleLine);
