@@ -336,7 +336,8 @@ class EditorWidget extends HookConsumerWidget {
       final firstChar = state.buffer.byteOfLine(row: visibleLines.first);
       final lastChar =
           state.buffer.byteOfLine(row: visibleLines.last - 1) +
-          state.buffer.lineLen(row: visibleLines.last - 1);
+          state.buffer.lineLen(row: visibleLines.last - 1) +
+          1;
 
       return (first: firstChar, last: lastChar);
     }, [visibleLines, state.buffer.version]);
