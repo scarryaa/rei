@@ -155,6 +155,36 @@ impl Buffer {
     }
 
     #[frb(sync, type_64bit_int)]
+    pub fn text_in_range_char_offset(
+        &self,
+        start_row: usize,
+        end_row: usize,
+        start_char_offset: usize,
+        end_char_offset: usize,
+    ) -> String {
+        if self.line_count() == 0 {
+            return "".to_string();
+        }
+
+        let lines: Vec<String> = self
+            .text
+            .lines()
+            .skip(start_row)
+            .take(end_row - start_row)
+            .map(|line| {
+                if start_char_offset > line.byte_len() {
+                    return "".to_string();
+                }
+
+                line.byte_slice(start_char_offset..end_char_offset.min(line.byte_len()))
+                    .to_string()
+            })
+            .collect();
+
+        lines.join("\n")
+    }
+
+    #[frb(sync, type_64bit_int)]
     pub fn row_column_to_idx(&self, row: usize, column: usize) -> usize {
         if self.line_count() == 0 {
             return 0;

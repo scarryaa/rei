@@ -460,17 +460,43 @@ class EditorWidget extends HookConsumerWidget {
       return (start: firstChar, end: lastChar);
     }, [visibleLines, state.buffer.version]);
 
-    final textPainter = useMemoized(() {
-      final lineLength = state.buffer.lineLen(row: visibleLines.last);
+    final visibleChars = useMemoized(
+      () {
+        if (!horizontalScrollController.hasClients ||
+            !horizontalScrollController.position.hasViewportDimension) {
+          return (first: 0, last: 0);
+        }
 
+        final viewportWidth =
+            horizontalScrollController.position.viewportDimension;
+        final horizontalOffset = horizontalScrollController.offset;
+
+        final firstChar = max(
+          0,
+          (horizontalOffset / fontMetrics.charWidth).floor(),
+        );
+        final lastChar =
+            ((horizontalOffset + viewportWidth) / fontMetrics.charWidth).ceil();
+
+        return (first: firstChar, last: lastChar);
+      },
+      [
+        visibleLines,
+        state.buffer.version,
+        state.cursor,
+        horizontalOffset.value,
+      ],
+    );
+
+    final textPainter = useMemoized(() {
       final innerTextPainter = TextPainter(
         textDirection: TextDirection.ltr,
         text: TextSpan(
-          text: state.buffer.textInRange(
+          text: state.buffer.textInRangeCharOffset(
             startRow: visibleLines.first,
-            startColumn: 0,
             endRow: visibleLines.last,
-            endColumn: lineLength,
+            startCharOffset: visibleChars.first,
+            endCharOffset: visibleChars.last,
           ),
           style: textStyle,
         ),
@@ -478,7 +504,7 @@ class EditorWidget extends HookConsumerWidget {
       innerTextPainter.layout();
 
       return innerTextPainter;
-    }, [state.buffer.version, visibleLines]);
+    }, [state.buffer.version, visibleLines, visibleChars]);
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -556,6 +582,7 @@ class EditorWidget extends HookConsumerWidget {
                             firstVisibleLine: visibleLines.first,
                             startCharOffset: charOffset.start,
                             endCharOffset: charOffset.end,
+                            firstVisibleChar: visibleChars.first,
                           ),
                         ),
                       ),

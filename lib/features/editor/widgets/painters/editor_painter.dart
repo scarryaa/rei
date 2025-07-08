@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:rei/bridge/rust/api/buffer.dart';
 import 'package:rei/bridge/rust/api/cursor.dart';
@@ -14,6 +12,7 @@ class EditorPainter extends CustomPainter {
     required this.selection,
     required this.fontMetrics,
     required this.firstVisibleLine,
+    required this.firstVisibleChar,
     required this.startCharOffset,
     required this.endCharOffset,
   });
@@ -24,6 +23,7 @@ class EditorPainter extends CustomPainter {
   final Selection selection;
   final FontMetrics fontMetrics;
   final int firstVisibleLine;
+  final int firstVisibleChar;
   final int startCharOffset;
   final int endCharOffset;
 
@@ -34,7 +34,10 @@ class EditorPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     canvas.clipRect(Rect.fromLTWH(0, 0, size.width, size.height));
-    canvas.translate(0, firstVisibleLine * fontMetrics.lineHeight);
+    canvas.translate(
+      firstVisibleChar * fontMetrics.charWidth,
+      firstVisibleLine * fontMetrics.lineHeight,
+    );
 
     drawSelection(canvas, size);
     drawText(canvas, size);
@@ -46,17 +49,18 @@ class EditorPainter extends CustomPainter {
   }
 
   void drawCursor(Canvas canvas, Size size) {
-    final offset = buffer.rowColumnToIdx(
-      row: cursor.row,
-      column: cursor.column,
-    );
-    final position = TextPosition(offset: offset - startCharOffset);
-    final cursorOffset = textPainter.getOffsetForCaret(position, Rect.zero);
+    final actualColumn = cursor.column - firstVisibleChar;
+
+    if (actualColumn < 0) return;
+
+    final cursorX = actualColumn * fontMetrics.charWidth;
+    final cursorY = (cursor.row - firstVisibleLine) * fontMetrics.lineHeight;
+
     final rect = Rect.fromLTWH(
-      cursorOffset.dx,
-      cursorOffset.dy,
+      cursorX,
+      cursorY,
       cursorWidth,
-      textPainter.preferredLineHeight,
+      fontMetrics.lineHeight,
     );
 
     canvas.drawRect(rect, Paint()..color = cursorColor);
@@ -64,63 +68,71 @@ class EditorPainter extends CustomPainter {
 
   void drawSelection(Canvas canvas, Size size) {
     final normalized = selection.normalized();
+    final visibleLineCount = (size.height / fontMetrics.lineHeight).ceil();
 
-    final baseOffset = buffer.rowColumnToIdx(
-      row: normalized.start.row,
-      column: normalized.start.column,
-    );
-    final extentOffset = buffer.rowColumnToIdx(
-      row: normalized.end.row,
-      column: normalized.end.column,
-    );
-
-    if (baseOffset == extentOffset) return;
-
-    int adjustedBaseOffset;
-    if (baseOffset < startCharOffset) {
-      adjustedBaseOffset = 0;
-    } else {
-      adjustedBaseOffset = baseOffset - startCharOffset;
+    if (normalized.isEmpty()) {
+      return;
     }
 
-    int adjustedExtentOffset;
-    if (extentOffset > endCharOffset) {
-      adjustedExtentOffset = endCharOffset;
-    } else {
-      adjustedExtentOffset = extentOffset - startCharOffset;
+    if (normalized.end.row < firstVisibleLine ||
+        normalized.start.row >= firstVisibleLine + visibleLineCount) {
+      return;
     }
 
-    final boxes = textPainter.getBoxesForSelection(
-      TextSelection(
-        baseOffset: adjustedBaseOffset,
-        extentOffset: adjustedExtentOffset,
-      ),
-      boxHeightStyle: BoxHeightStyle.max,
-    );
-
-    for (final box in boxes) {
-      final rect = box.toRect();
-
-      // Handle empty lines.
-      if (rect.width == 0) {
-        final newRect = Rect.fromLTWH(
-          0,
-          rect.top,
-          fontMetrics.charWidth,
-          fontMetrics.lineHeight,
-        );
-        canvas.drawRect(newRect, Paint()..color = selectionColor);
-      } else {
-        canvas.drawRect(
-          Rect.fromLTWH(
-            rect.left,
-            rect.top,
-            rect.width,
-            fontMetrics.lineHeight,
-          ),
-          Paint()..color = selectionColor,
-        );
+    for (int row = normalized.start.row; row <= normalized.end.row; row++) {
+      if (row < firstVisibleLine ||
+          row >= firstVisibleLine + visibleLineCount) {
+        continue;
       }
+
+      final lineLength = buffer.lineLen(row: row);
+      int startCol, endCol;
+
+      if (row == normalized.start.row) {
+        startCol = normalized.start.column;
+      } else {
+        startCol = 0;
+      }
+
+      if (row == normalized.end.row) {
+        endCol = normalized.end.column;
+      } else {
+        endCol = lineLength;
+      }
+
+      final visibleStartCol = startCol - firstVisibleChar;
+      final visibleEndCol = endCol - firstVisibleChar;
+
+      final maxVisibleChars = (size.width / fontMetrics.charWidth).ceil();
+
+      if (visibleEndCol < 0 || visibleStartCol >= maxVisibleChars) {
+        continue;
+      }
+
+      final drawStartCol = visibleStartCol.clamp(0, double.infinity).toInt();
+      final drawEndCol = visibleEndCol
+          .clamp(0, (size.width / fontMetrics.charWidth).ceil())
+          .toInt();
+
+      final selectionWidth =
+          (drawEndCol - drawStartCol) * fontMetrics.charWidth;
+      final finalWidth =
+          (selectionWidth <= 0 ||
+              (endCol > lineLength && drawEndCol > drawStartCol))
+          ? fontMetrics.charWidth
+          : selectionWidth;
+
+      final selectionX = drawStartCol * fontMetrics.charWidth;
+      final selectionY = (row - firstVisibleLine) * fontMetrics.lineHeight;
+
+      final rect = Rect.fromLTWH(
+        selectionX,
+        selectionY,
+        finalWidth,
+        fontMetrics.lineHeight,
+      );
+
+      canvas.drawRect(rect, Paint()..color = selectionColor);
     }
   }
 
@@ -130,6 +142,7 @@ class EditorPainter extends CustomPainter {
         oldDelegate.textPainter != textPainter ||
         oldDelegate.cursor != cursor ||
         oldDelegate.selection != selection ||
-        oldDelegate.firstVisibleLine != firstVisibleLine;
+        oldDelegate.firstVisibleLine != firstVisibleLine ||
+        oldDelegate.firstVisibleChar != firstVisibleChar;
   }
 }

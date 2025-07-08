@@ -52,6 +52,13 @@ abstract class Buffer implements RustOpaqueInterface {
     required int endColumn,
   });
 
+  String textInRangeCharOffset({
+    required int startRow,
+    required int endRow,
+    required int startCharOffset,
+    required int endCharOffset,
+  });
+
   @override
   String toString();
 }
