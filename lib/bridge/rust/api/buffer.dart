@@ -24,6 +24,8 @@ abstract class Buffer implements RustOpaqueInterface {
 
   int lineCount();
 
+  int lineCountWithTrailingNewline();
+
   int lineLen({required int row});
 
   int maxLineLength();

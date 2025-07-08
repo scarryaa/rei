@@ -158,6 +158,17 @@ impl Buffer {
     }
 
     #[frb(sync, type_64bit_int)]
+    pub fn line_count_with_trailing_newline(&self) -> usize {
+        let extra_newline =
+            if self.text.byte_len() != 0 && self.text.byte(self.text.byte_len() - 1) == b'\n' {
+                1
+            } else {
+                0
+            };
+        self.text.line_len() + extra_newline
+    }
+
+    #[frb(sync, type_64bit_int)]
     pub fn line_len(&self, row: usize) -> usize {
         self.line_lengths.get(&row).unwrap_or(&0).clone()
     }

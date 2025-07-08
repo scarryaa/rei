@@ -236,7 +236,7 @@ class EditorWidget extends HookConsumerWidget {
     }, [fontMetrics]);
 
     final size = useMemoized(() {
-      final lineCount = state.buffer.lineCount();
+      final lineCount = state.buffer.lineCountWithTrailingNewline();
       final maxLineLength = state.buffer.maxLineLength();
       final height = lineCount * fontMetrics.lineHeight;
       final width = maxLineLength * fontMetrics.charWidth;
