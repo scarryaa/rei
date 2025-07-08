@@ -123,36 +123,7 @@ class EditorWidget extends HookConsumerWidget {
     final verticalScrollController = useScrollController();
     final horizontalScrollController = useScrollController();
     final verticalOffset = useState(0.0);
-
-    useEffect(() {
-      void updateVerticalOffset() {
-        if (!verticalScrollController.hasClients ||
-            !verticalScrollController.position.hasContentDimensions) {
-          return;
-        }
-
-        final newOffset = min(
-          verticalScrollController.offset,
-          verticalScrollController.position.maxScrollExtent,
-        );
-
-        if (verticalOffset.value != newOffset) {
-          verticalOffset.value = newOffset;
-        }
-      }
-
-      void scrollListener() {
-        updateVerticalOffset();
-      }
-
-      verticalScrollController.addListener(scrollListener);
-
-      updateVerticalOffset();
-
-      return () {
-        verticalScrollController.removeListener(scrollListener);
-      };
-    }, [state.buffer.version, state.cursor]);
+    final horizontalOffset = useState(0.0);
 
     useListenable(verticalScrollController);
     useListenable(horizontalScrollController);
@@ -177,53 +148,6 @@ class EditorWidget extends HookConsumerWidget {
         charWidth: innerCharPainter.width,
       );
     }, [textStyle]);
-
-    final visibleLines = useMemoized(() {
-      if (!verticalScrollController.hasClients ||
-          !verticalScrollController.position.hasViewportDimension) {
-        return (first: 0, last: 0);
-      }
-
-      final viewportHeight =
-          verticalScrollController.position.viewportDimension;
-      final firstVisibleLine = max(
-        0,
-        min(
-          ((verticalOffset.value) / fontMetrics.lineHeight).floor(),
-          state.buffer.lineCount() - 1,
-        ),
-      );
-      final lastVisibleLine = max(
-        0,
-        min(
-          ((verticalOffset.value + viewportHeight) / fontMetrics.lineHeight)
-              .ceil(),
-          state.buffer.lineCount(),
-        ),
-      );
-
-      return (first: firstVisibleLine, last: lastVisibleLine);
-    }, [state.buffer.version, state.cursor, verticalOffset.value]);
-
-    final textPainter = useMemoized(() {
-      final lineLength = state.buffer.lineLen(row: visibleLines.last);
-
-      final innerTextPainter = TextPainter(
-        textDirection: TextDirection.ltr,
-        text: TextSpan(
-          text: state.buffer.textInRange(
-            startRow: visibleLines.first,
-            startColumn: 0,
-            endRow: visibleLines.last,
-            endColumn: lineLength,
-          ),
-          style: textStyle,
-        ),
-      );
-      innerTextPainter.layout();
-
-      return innerTextPainter;
-    }, [state.buffer.version, visibleLines]);
 
     final padding = useMemoized(() {
       final verticalMultiplier = 5.0;
@@ -253,37 +177,174 @@ class EditorWidget extends HookConsumerWidget {
         return null;
       }
 
+      void updateVerticalOffset(double newOffset) {
+        if (verticalOffset.value != newOffset) {
+          verticalOffset.value = newOffset;
+        }
+      }
+
+      void updateHorizontalOffset(double newOffset) {
+        if (horizontalOffset.value != newOffset) {
+          horizontalOffset.value = newOffset;
+        }
+      }
+
       final cursorX = state.cursor.column * fontMetrics.charWidth;
       final cursorY = state.cursor.row * fontMetrics.lineHeight;
 
-      final verticalOffset = verticalScrollController.offset;
-      final horizontalOffset = horizontalScrollController.offset;
+      final verticalScrollOffset = verticalScrollController.offset;
+      final horizontalScrollOffset = horizontalScrollController.offset;
       final viewportHeight =
           verticalScrollController.position.viewportDimension;
       final viewportWidth =
           horizontalScrollController.position.viewportDimension;
 
       // Vertical scroll
-      if (cursorY - padding.vertical < verticalOffset) {
-        verticalScrollController.jumpTo(cursorY - padding.vertical);
+      if (cursorY - padding.vertical < verticalScrollOffset) {
+        final double newOffset = min(
+          max(0, cursorY - padding.vertical),
+          size.height - viewportHeight,
+        );
+
+        updateVerticalOffset(newOffset);
+        verticalScrollController.jumpTo(newOffset);
       } else if (cursorY >
-          verticalOffset +
+          verticalScrollOffset +
               viewportHeight -
               padding.vertical -
               fontMetrics.lineHeight) {
-        verticalScrollController.jumpTo(cursorY - padding.vertical);
+        final double newOffset = min(
+          cursorY + padding.vertical + fontMetrics.lineHeight - viewportHeight,
+          size.height - viewportHeight,
+        );
+
+        updateVerticalOffset(newOffset);
+        verticalScrollController.jumpTo(newOffset);
       }
 
       // Horizontal scroll
-      if (cursorX - padding.horizontal < horizontalOffset) {
-        horizontalScrollController.jumpTo(cursorX - padding.horizontal);
+      if (cursorX - padding.horizontal < horizontalScrollOffset) {
+        final double newOffset = min(
+          max(0, cursorX - padding.horizontal),
+          size.width - viewportWidth,
+        );
+
+        updateHorizontalOffset(newOffset);
+        horizontalScrollController.jumpTo(newOffset);
       } else if (cursorX >
-          horizontalOffset + viewportWidth - padding.horizontal) {
-        horizontalScrollController.jumpTo(cursorX - padding.horizontal);
+          horizontalScrollOffset + viewportWidth - padding.horizontal) {
+        final double newOffset = min(
+          max(0, cursorX + padding.horizontal - viewportWidth),
+          size.width - viewportWidth,
+        );
+
+        updateHorizontalOffset(newOffset);
+        horizontalScrollController.jumpTo(newOffset);
       }
 
       return null;
     }, [state.cursor]);
+
+    useEffect(() {
+      void updateVerticalOffset() {
+        if (!verticalScrollController.hasClients ||
+            !verticalScrollController.position.hasContentDimensions) {
+          return;
+        }
+
+        final newOffset = min(
+          verticalScrollController.offset,
+          verticalScrollController.position.maxScrollExtent,
+        );
+
+        if (verticalOffset.value != newOffset) {
+          verticalOffset.value = newOffset;
+        }
+      }
+
+      void updateHorizontalOffset() {
+        if (!horizontalScrollController.hasClients ||
+            !horizontalScrollController.position.hasContentDimensions) {
+          return;
+        }
+
+        final newOffset = min(
+          horizontalScrollController.offset,
+          horizontalScrollController.position.maxScrollExtent,
+        );
+
+        if (horizontalOffset.value != newOffset) {
+          horizontalOffset.value = newOffset;
+        }
+      }
+
+      void verticalScrollListener() {
+        updateVerticalOffset();
+      }
+
+      void horizontalScrollListener() {
+        updateHorizontalOffset();
+      }
+
+      verticalScrollController.addListener(verticalScrollListener);
+      updateVerticalOffset();
+
+      horizontalScrollController.addListener(horizontalScrollListener);
+      updateHorizontalOffset();
+
+      return () {
+        verticalScrollController.removeListener(verticalScrollListener);
+        horizontalScrollController.removeListener(horizontalScrollListener);
+      };
+    }, [state.buffer.version, state.cursor]);
+
+    final visibleLines = useMemoized(() {
+      if (!verticalScrollController.hasClients ||
+          !verticalScrollController.position.hasViewportDimension) {
+        return (first: 0, last: 0);
+      }
+
+      final viewportHeight =
+          verticalScrollController.position.viewportDimension;
+      final firstVisibleLine = max(
+        0,
+        min(
+          ((verticalScrollController.offset) / fontMetrics.lineHeight).floor(),
+          state.buffer.lineCount() - 1,
+        ),
+      );
+      final lastVisibleLine = max(
+        0,
+        min(
+          ((verticalScrollController.offset + viewportHeight) /
+                  fontMetrics.lineHeight)
+              .ceil(),
+          state.buffer.lineCount(),
+        ),
+      );
+
+      return (first: firstVisibleLine, last: lastVisibleLine);
+    }, [state.buffer.version, state.cursor, verticalOffset.value]);
+
+    final textPainter = useMemoized(() {
+      final lineLength = state.buffer.lineLen(row: visibleLines.last);
+
+      final innerTextPainter = TextPainter(
+        textDirection: TextDirection.ltr,
+        text: TextSpan(
+          text: state.buffer.textInRange(
+            startRow: visibleLines.first,
+            startColumn: 0,
+            endRow: visibleLines.last,
+            endColumn: lineLength,
+          ),
+          style: textStyle,
+        ),
+      );
+      innerTextPainter.layout();
+
+      return innerTextPainter;
+    }, [state.buffer.version, visibleLines]);
 
     return LayoutBuilder(
       builder: (context, constraints) {
