@@ -244,6 +244,47 @@ class EditorWidget extends HookConsumerWidget {
       return Size(width + padding.horizontal, height + padding.vertical);
     }, [state.buffer.version, fontMetrics, padding]);
 
+    // Scroll-to-cursor
+    useEffect(() {
+      if (!verticalScrollController.hasClients ||
+          !verticalScrollController.position.hasViewportDimension ||
+          !horizontalScrollController.hasClients ||
+          !horizontalScrollController.position.hasViewportDimension) {
+        return null;
+      }
+
+      final cursorX = state.cursor.column * fontMetrics.charWidth;
+      final cursorY = state.cursor.row * fontMetrics.lineHeight;
+
+      final verticalOffset = verticalScrollController.offset;
+      final horizontalOffset = horizontalScrollController.offset;
+      final viewportHeight =
+          verticalScrollController.position.viewportDimension;
+      final viewportWidth =
+          horizontalScrollController.position.viewportDimension;
+
+      // Vertical scroll
+      if (cursorY - padding.vertical < verticalOffset) {
+        verticalScrollController.jumpTo(cursorY - padding.vertical);
+      } else if (cursorY >
+          verticalOffset +
+              viewportHeight -
+              padding.vertical -
+              fontMetrics.lineHeight) {
+        verticalScrollController.jumpTo(cursorY - padding.vertical);
+      }
+
+      // Horizontal scroll
+      if (cursorX - padding.horizontal < horizontalOffset) {
+        horizontalScrollController.jumpTo(cursorX - padding.horizontal);
+      } else if (cursorX >
+          horizontalOffset + viewportWidth - padding.horizontal) {
+        horizontalScrollController.jumpTo(cursorX - padding.horizontal);
+      }
+
+      return null;
+    }, [state.cursor]);
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final width = max(size.width, constraints.maxWidth);
