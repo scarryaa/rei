@@ -94,7 +94,7 @@ class Editor extends _$Editor {
   void moveRight(bool extendSelection) {
     final cursor = state.cursor;
     Cursor newCursor = cursor;
-    final lineCount = state.buffer.lineCount() - 1;
+    final lineCount = state.buffer.lineCountWithTrailingNewline() - 1;
     final lastLineLength = state.buffer.lineLen(row: lineCount);
 
     if (cursor.row == lineCount && cursor.column == lastLineLength) return;
@@ -144,7 +144,7 @@ class Editor extends _$Editor {
     final cursor = state.cursor;
     Cursor newCursor = cursor;
 
-    final lineCount = state.buffer.lineCount() - 1;
+    final lineCount = state.buffer.lineCountWithTrailingNewline() - 1;
     if (cursor.row == lineCount) {
       // Move to the end of the document.
       final lastLineLength = state.buffer.lineLen(row: lineCount);
@@ -223,7 +223,7 @@ class Editor extends _$Editor {
   }
 
   void selectAll() {
-    final lineCount = state.buffer.lineCount() - 1;
+    final lineCount = state.buffer.lineCountWithTrailingNewline() - 1;
     final lastLineLength = state.buffer.lineLen(row: lineCount);
     final endCursor = Cursor(
       row: lineCount,
