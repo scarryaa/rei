@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:rei/bridge/rust/api/cursor.dart';
 import 'package:rei/features/editor/models/font_metrics.dart';
 import 'package:rei/features/editor/models/state.dart';
 import 'package:rei/features/editor/providers/editor.dart';
@@ -12,6 +13,116 @@ import 'package:rei/features/editor/widgets/painters/editor_painter.dart';
 
 class EditorWidget extends HookConsumerWidget {
   const EditorWidget({super.key});
+
+  Cursor _offsetToCursorPosition(
+    Offset offset,
+    GlobalKey painterKey,
+    EditorState state,
+    FontMetrics metrics,
+  ) {
+    final renderBox =
+        painterKey.currentContext?.findRenderObject() as RenderBox?;
+
+    if (renderBox != null) {
+      final globalPosition = renderBox.globalToLocal(offset);
+      final newRow = (globalPosition.dy / metrics.lineHeight).floor();
+      final newColumn = (globalPosition.dx / metrics.charWidth).round();
+
+      final lineCount = max(0, state.buffer.lineCount() - 1);
+      final clampedRow = min(max(0, newRow), lineCount);
+      final targetLineLength = state.buffer.lineLen(row: clampedRow);
+      final clampedColumn = min(max(0, newColumn), targetLineLength);
+
+      return Cursor(
+        row: clampedRow,
+        column: clampedColumn,
+        stickyColumn: clampedColumn,
+      );
+    }
+
+    return state.cursor;
+  }
+
+  void _handleTapDown(
+    TapDownDetails details,
+    GlobalKey painterKey,
+    EditorState state,
+    Editor notifier,
+    FontMetrics metrics,
+  ) {
+    final newCursor = _offsetToCursorPosition(
+      details.globalPosition,
+      painterKey,
+      state,
+      metrics,
+    );
+
+    notifier.clearSelection();
+    notifier.moveTo(newCursor);
+  }
+
+  void _handlePanStart(
+    DragStartDetails details,
+    GlobalKey painterKey,
+    EditorState state,
+    Editor notifier,
+    FontMetrics metrics,
+    ValueNotifier<bool> isDragging,
+  ) {
+    isDragging.value = true;
+
+    final newCursor = _offsetToCursorPosition(
+      details.globalPosition,
+      painterKey,
+      state,
+      metrics,
+    );
+
+    notifier.clearSelection();
+    notifier.startSelection(newCursor, true);
+    notifier.moveTo(newCursor);
+  }
+
+  void _handlePanUpdate(
+    DragUpdateDetails details,
+    GlobalKey painterKey,
+    EditorState state,
+    Editor notifier,
+    FontMetrics metrics,
+    ValueNotifier<bool> isDragging,
+  ) {
+    if (isDragging.value) {
+      final newCursor = _offsetToCursorPosition(
+        details.globalPosition,
+        painterKey,
+        state,
+        metrics,
+      );
+
+      notifier.updateSelection(newCursor, true);
+      notifier.moveTo(newCursor);
+    }
+  }
+
+  void _handlePanEnd(
+    DragEndDetails details,
+    GlobalKey painterKey,
+    EditorState state,
+    Editor notifier,
+    FontMetrics metrics,
+    ValueNotifier<bool> isDragging,
+  ) {
+    isDragging.value = false;
+
+    final newCursor = _offsetToCursorPosition(
+      details.globalPosition,
+      painterKey,
+      state,
+      metrics,
+    );
+
+    notifier.moveTo(newCursor);
+  }
 
   void _handlePaste(EditorState state, Editor notifier) async {
     final text = (await Clipboard.getData(Clipboard.kTextPlain))?.text;
@@ -124,6 +235,8 @@ class EditorWidget extends HookConsumerWidget {
     final horizontalScrollController = useScrollController();
     final verticalOffset = useState(0.0);
     final horizontalOffset = useState(0.0);
+    final isDragging = useState(false);
+    final GlobalKey painterKey = GlobalKey();
 
     useListenable(verticalScrollController);
     useListenable(horizontalScrollController);
@@ -390,21 +503,55 @@ class EditorWidget extends HookConsumerWidget {
                     focusNode: focusNode,
                     onKeyEvent: (node, event) =>
                         _handleKeyEvent(node, event, state, notifier),
-                    child: MouseRegion(
-                      cursor: SystemMouseCursors.text,
-                      child: CustomPaint(
-                        size: newSize,
-                        willChange: true,
-                        isComplex: true,
-                        painter: EditorPainter(
-                          textPainter: textPainter,
-                          buffer: state.buffer,
-                          cursor: state.cursor,
-                          selection: state.selection,
-                          fontMetrics: fontMetrics,
-                          firstVisibleLine: visibleLines.first,
-                          firstVisibleCharIndex: visibleChars.first,
-                          lastVisibleCharIndex: visibleChars.last,
+                    child: GestureDetector(
+                      onTapDown: (details) => _handleTapDown(
+                        details,
+                        painterKey,
+                        state,
+                        notifier,
+                        fontMetrics,
+                      ),
+                      onPanStart: (details) => _handlePanStart(
+                        details,
+                        painterKey,
+                        state,
+                        notifier,
+                        fontMetrics,
+                        isDragging,
+                      ),
+                      onPanUpdate: (details) => _handlePanUpdate(
+                        details,
+                        painterKey,
+                        state,
+                        notifier,
+                        fontMetrics,
+                        isDragging,
+                      ),
+                      onPanEnd: (details) => _handlePanEnd(
+                        details,
+                        painterKey,
+                        state,
+                        notifier,
+                        fontMetrics,
+                        isDragging,
+                      ),
+                      child: MouseRegion(
+                        cursor: SystemMouseCursors.text,
+                        child: CustomPaint(
+                          key: painterKey,
+                          size: newSize,
+                          willChange: true,
+                          isComplex: true,
+                          painter: EditorPainter(
+                            textPainter: textPainter,
+                            buffer: state.buffer,
+                            cursor: state.cursor,
+                            selection: state.selection,
+                            fontMetrics: fontMetrics,
+                            firstVisibleLine: visibleLines.first,
+                            firstVisibleCharIndex: visibleChars.first,
+                            lastVisibleCharIndex: visibleChars.last,
+                          ),
                         ),
                       ),
                     ),

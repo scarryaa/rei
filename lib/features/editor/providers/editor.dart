@@ -63,6 +63,10 @@ class Editor extends _$Editor {
   }
 
   // TODO: For movement methods, consider chars instead of +1 and -1.
+  void moveTo(Cursor cursor) {
+    state = state.copyWith(cursor: cursor);
+  }
+
   void moveLeft(bool extendSelection) {
     final cursor = state.cursor;
     Cursor newCursor = cursor;
@@ -86,9 +90,9 @@ class Editor extends _$Editor {
       );
     }
 
-    _startSelection(cursor, extendSelection);
+    startSelection(cursor, extendSelection);
     state = state.copyWith(cursor: newCursor);
-    _updateSelection(newCursor, extendSelection);
+    updateSelection(newCursor, extendSelection);
   }
 
   void moveRight(bool extendSelection) {
@@ -112,9 +116,9 @@ class Editor extends _$Editor {
       );
     }
 
-    _startSelection(cursor, extendSelection);
+    startSelection(cursor, extendSelection);
     state = state.copyWith(cursor: newCursor);
-    _updateSelection(newCursor, extendSelection);
+    updateSelection(newCursor, extendSelection);
   }
 
   void moveUp(bool extendSelection) {
@@ -135,9 +139,9 @@ class Editor extends _$Editor {
       );
     }
 
-    _startSelection(cursor, extendSelection);
+    startSelection(cursor, extendSelection);
     state = state.copyWith(cursor: newCursor);
-    _updateSelection(newCursor, extendSelection);
+    updateSelection(newCursor, extendSelection);
   }
 
   void moveDown(bool extendSelection) {
@@ -164,12 +168,12 @@ class Editor extends _$Editor {
       );
     }
 
-    _startSelection(cursor, extendSelection);
+    startSelection(cursor, extendSelection);
     state = state.copyWith(cursor: newCursor);
-    _updateSelection(newCursor, extendSelection);
+    updateSelection(newCursor, extendSelection);
   }
 
-  void _startSelection(Cursor cursor, bool extendSelection) {
+  void startSelection(Cursor cursor, bool extendSelection) {
     // Start a new selection.
     if (state.selection == Selection.default_() && extendSelection) {
       state = state.copyWith(
@@ -178,7 +182,7 @@ class Editor extends _$Editor {
     }
   }
 
-  void _updateSelection(Cursor cursor, bool extendSelection) {
+  void updateSelection(Cursor cursor, bool extendSelection) {
     Selection newSelection = state.selection;
 
     // Extend the selection if flag is set.
