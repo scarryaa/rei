@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
@@ -49,24 +48,6 @@ class GutterWidget extends HookConsumerWidget {
 
       return null;
     }, [scrollSyncState.offset, scrollSyncState.activeController]);
-
-    useEffect(() {
-      Timer? debounceTimer;
-
-      void onScrollEnd() {
-        debounceTimer?.cancel();
-        debounceTimer = Timer(const Duration(milliseconds: 150), () {
-          scrollSyncNotifier.stopScrolling();
-        });
-      }
-
-      verticalScrollController.addListener(onScrollEnd);
-
-      return () {
-        verticalScrollController.removeListener(onScrollEnd);
-        debounceTimer?.cancel();
-      };
-    }, []);
 
     final padding = useMemoized(() {
       final verticalMultiplier = 5.0;

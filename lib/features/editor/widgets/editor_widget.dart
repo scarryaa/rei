@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
@@ -264,24 +263,6 @@ class EditorWidget extends HookConsumerWidget {
 
       return null;
     }, [scrollSyncState.offset, scrollSyncState.activeController]);
-
-    useEffect(() {
-      Timer? debounceTimer;
-
-      void onScrollEnd() {
-        debounceTimer?.cancel();
-        debounceTimer = Timer(const Duration(milliseconds: 150), () {
-          scrollSyncNotifier.stopScrolling();
-        });
-      }
-
-      verticalScrollController.addListener(onScrollEnd);
-
-      return () {
-        verticalScrollController.removeListener(onScrollEnd);
-        debounceTimer?.cancel();
-      };
-    }, []);
 
     final padding = useMemoized(() {
       final verticalMultiplier = 5.0;

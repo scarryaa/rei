@@ -12,27 +12,18 @@ class ScrollSync extends _$ScrollSync {
   }
 
   void updateScrollPosition(double offset, String controllerId) {
-    if (state.activeController == null ||
-        state.activeController == controllerId) {
-      Future.microtask(() {
-        state = state.copyWith(
-          offset: offset,
-          isScrolling: true,
-          activeController: controllerId,
-        );
-      });
-    }
+    Future.microtask(() {
+      state = state.copyWith(
+        offset: offset,
+        isScrolling: true,
+        activeController: controllerId,
+      );
+    });
   }
 
   void startScrolling(String controllerId) {
     Future.microtask(() {
       state = state.copyWith(isScrolling: true, activeController: controllerId);
-    });
-  }
-
-  void stopScrolling() {
-    Future.microtask(() {
-      state = state.copyWith(isScrolling: false, activeController: null);
     });
   }
 }
