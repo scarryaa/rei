@@ -6,6 +6,7 @@ part 'file_entry.freezed.dart';
 sealed class FileEntry with _$FileEntry {
   const factory FileEntry({
     required String path,
+    required String name,
     required bool isDirectory,
     @Default(false) bool isExpanded,
     @Default([]) List<FileEntry> children,
