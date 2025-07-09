@@ -80,9 +80,11 @@ class GutterWidget extends HookConsumerWidget {
     final size = useMemoized(
       () {
         final width =
-            (textPainterWidth.value == 0
-                ? fontMetrics.charWidth
-                : textPainterWidth.value) +
+            editorState.buffer
+                    .lineCountWithTrailingNewline()
+                    .toString()
+                    .length *
+                fontMetrics.charWidth +
             padding.horizontal;
         final height =
             (editorState.buffer.lineCountWithTrailingNewline() *
