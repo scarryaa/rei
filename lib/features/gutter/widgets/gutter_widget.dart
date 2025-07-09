@@ -1,11 +1,12 @@
+import 'dart:async';
 import 'dart:math';
-
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:rei/features/editor/models/font_metrics.dart';
 import 'package:rei/features/editor/providers/editor.dart';
 import 'package:rei/features/gutter/widgets/painters/gutter_painter.dart';
+import 'package:rei/shared/providers/scroll_sync.dart';
 
 class GutterWidget extends HookConsumerWidget {
   const GutterWidget({
@@ -19,14 +20,57 @@ class GutterWidget extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final verticalScrollController = useScrollController();
     final editorState = ref.watch(editorProvider);
+
+    final scrollSyncState = ref.watch(scrollSyncProvider);
+    final scrollSyncNotifier = ref.read(scrollSyncProvider.notifier);
+
+    final scrollSync = useMemoized(
+      () => verticalScrollController.createSync('gutter', scrollSyncNotifier),
+      [verticalScrollController, scrollSyncNotifier],
+    );
+
+    useListenable(verticalScrollController);
+
+    useEffect(() {
+      scrollSync.startListening();
+      return () => scrollSync.stopListening();
+    }, [scrollSync]);
+
+    useEffect(() {
+      if (scrollSyncState.activeController != null &&
+          scrollSyncState.activeController != 'gutter' &&
+          scrollSyncState.isScrolling) {
+        scrollSync.syncTo(scrollSyncState.offset);
+      }
+
+      return null;
+    }, [scrollSyncState.offset, scrollSyncState.activeController]);
+
+    useEffect(() {
+      Timer? debounceTimer;
+
+      void onScrollEnd() {
+        debounceTimer?.cancel();
+        debounceTimer = Timer(const Duration(milliseconds: 150), () {
+          scrollSyncNotifier.stopScrolling();
+        });
+      }
+
+      verticalScrollController.addListener(onScrollEnd);
+
+      return () {
+        verticalScrollController.removeListener(onScrollEnd);
+        debounceTimer?.cancel();
+      };
+    }, []);
+
     final padding = useMemoized(() {
       final verticalMultiplier = 5.0;
       final horizontalMultiplier = 8.0;
-
       final vertical = verticalMultiplier * fontMetrics.lineHeight;
       final horizontal = horizontalMultiplier * fontMetrics.charWidth;
-
       return (horizontal: horizontal, vertical: vertical);
     }, [fontMetrics]);
 
@@ -39,7 +83,6 @@ class GutterWidget extends HookConsumerWidget {
       ) {
         text += '${i + 1}\n';
       }
-
       final innerTextPainter = TextPainter(
         textDirection: TextDirection.ltr,
         text: TextSpan(
@@ -49,7 +92,6 @@ class GutterWidget extends HookConsumerWidget {
         textAlign: TextAlign.end,
       );
       innerTextPainter.layout();
-
       return innerTextPainter;
     }, [editorState.buffer.version]);
 
@@ -59,14 +101,23 @@ class GutterWidget extends HookConsumerWidget {
           (editorState.buffer.lineCountWithTrailingNewline() *
               fontMetrics.lineHeight) +
           padding.vertical;
-
       return Size(width, height);
     }, [padding, fontMetrics, editorState.buffer.version]);
 
-    return CustomPaint(
-      willChange: true,
-      size: size,
-      painter: GutterPainter(textPainter: textPainter),
+    return ScrollConfiguration(
+      behavior: ScrollBehavior().copyWith(
+        overscroll: false,
+        scrollbars: false,
+        physics: ClampingScrollPhysics(),
+      ),
+      child: SingleChildScrollView(
+        controller: verticalScrollController,
+        child: CustomPaint(
+          willChange: true,
+          size: size,
+          painter: GutterPainter(textPainter: textPainter),
+        ),
+      ),
     );
   }
 }

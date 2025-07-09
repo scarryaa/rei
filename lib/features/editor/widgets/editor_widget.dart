@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
@@ -10,6 +11,7 @@ import 'package:rei/features/editor/models/font_metrics.dart';
 import 'package:rei/features/editor/models/state.dart';
 import 'package:rei/features/editor/providers/editor.dart';
 import 'package:rei/features/editor/widgets/painters/editor_painter.dart';
+import 'package:rei/shared/providers/scroll_sync.dart';
 
 class EditorWidget extends HookConsumerWidget {
   const EditorWidget({
@@ -231,13 +233,55 @@ class EditorWidget extends HookConsumerWidget {
     final notifier = ref.read(editorProvider.notifier);
     final verticalScrollController = useScrollController();
     final horizontalScrollController = useScrollController();
+
+    final scrollSyncState = ref.watch(scrollSyncProvider);
+    final scrollSyncNotifier = ref.read(scrollSyncProvider.notifier);
+
     final verticalOffset = useState(0.0);
     final horizontalOffset = useState(0.0);
     final isDragging = useState(false);
     final GlobalKey painterKey = GlobalKey();
 
+    final scrollSync = useMemoized(
+      () => verticalScrollController.createSync('editor', scrollSyncNotifier),
+      [verticalScrollController, scrollSyncNotifier],
+    );
+
     useListenable(verticalScrollController);
     useListenable(horizontalScrollController);
+
+    useEffect(() {
+      scrollSync.startListening();
+      return () => scrollSync.stopListening();
+    }, [scrollSync]);
+
+    useEffect(() {
+      if (scrollSyncState.activeController != null &&
+          scrollSyncState.activeController != 'editor' &&
+          scrollSyncState.isScrolling) {
+        scrollSync.syncTo(scrollSyncState.offset);
+      }
+
+      return null;
+    }, [scrollSyncState.offset, scrollSyncState.activeController]);
+
+    useEffect(() {
+      Timer? debounceTimer;
+
+      void onScrollEnd() {
+        debounceTimer?.cancel();
+        debounceTimer = Timer(const Duration(milliseconds: 150), () {
+          scrollSyncNotifier.stopScrolling();
+        });
+      }
+
+      verticalScrollController.addListener(onScrollEnd);
+
+      return () {
+        verticalScrollController.removeListener(onScrollEnd);
+        debounceTimer?.cancel();
+      };
+    }, []);
 
     final padding = useMemoized(() {
       final verticalMultiplier = 5.0;
@@ -289,13 +333,14 @@ class EditorWidget extends HookConsumerWidget {
       final viewportWidth =
           horizontalScrollController.position.viewportDimension;
 
+      scrollSyncNotifier.startScrolling('editor');
+
       // Vertical scroll
       if (cursorY - padding.vertical < verticalScrollOffset) {
         final double newOffset = min(
           max(0, cursorY - padding.vertical),
           size.height - viewportHeight,
         );
-
         updateVerticalOffset(newOffset);
         verticalScrollController.jumpTo(newOffset);
       } else if (cursorY >
@@ -307,7 +352,6 @@ class EditorWidget extends HookConsumerWidget {
           cursorY + padding.vertical + fontMetrics.lineHeight - viewportHeight,
           size.height - viewportHeight,
         );
-
         updateVerticalOffset(newOffset);
         verticalScrollController.jumpTo(newOffset);
       }
@@ -318,7 +362,6 @@ class EditorWidget extends HookConsumerWidget {
           max(0, cursorX - padding.horizontal),
           size.width - viewportWidth,
         );
-
         updateHorizontalOffset(newOffset);
         horizontalScrollController.jumpTo(newOffset);
       } else if (cursorX >
@@ -327,7 +370,6 @@ class EditorWidget extends HookConsumerWidget {
           max(0, cursorX + padding.horizontal - viewportWidth),
           size.width - viewportWidth,
         );
-
         updateHorizontalOffset(newOffset);
         horizontalScrollController.jumpTo(newOffset);
       }
