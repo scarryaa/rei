@@ -33,7 +33,7 @@ class GutterWidget extends HookConsumerWidget {
       final globalPosition = renderBox.globalToLocal(offset);
       final newRow = (globalPosition.dy / metrics.lineHeight).floor();
 
-      final lineCount = max(0, state.buffer.lineCount() - 1);
+      final lineCount = max(0, state.buffer.lineCountWithTrailingNewline() - 1);
       final clampedRow = min(max(0, newRow), lineCount);
       final targetLineLength = state.buffer.lineLen(row: clampedRow);
 
