@@ -3,6 +3,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:rei/features/editor/models/font_metrics.dart';
 import 'package:rei/features/editor/widgets/editor_widget.dart';
+import 'package:rei/features/file_explorer/widgets/file_explorer_widget.dart';
 import 'package:rei/features/gutter/widgets/gutter_widget.dart';
 
 class EditorScreen extends HookConsumerWidget {
@@ -34,6 +35,7 @@ class EditorScreen extends HookConsumerWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        FileExplorerWidget(),
         GutterWidget(textStyle: textStyle, fontMetrics: fontMetrics),
         Expanded(
           child: EditorWidget(textStyle: textStyle, fontMetrics: fontMetrics),
