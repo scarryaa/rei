@@ -130,7 +130,12 @@ class EditorWidget extends HookConsumerWidget {
     }
   }
 
-  bool _handleShortcuts(KeyEvent event, EditorState state, Editor notifier) {
+  bool _handleShortcuts(
+    KeyEvent event,
+    EditorState state,
+    Editor notifier,
+    ValueNotifier<bool> shouldAutoScroll,
+  ) {
     bool isSuperPressed;
     if (Platform.isMacOS) {
       isSuperPressed = HardwareKeyboard.instance.isMetaPressed;
@@ -144,6 +149,7 @@ class EditorWidget extends HookConsumerWidget {
       case LogicalKeyboardKey.keyA:
         if (isSuperPressed) {
           notifier.selectAll();
+          shouldAutoScroll.value = false;
           handled = true;
         }
 
@@ -184,6 +190,7 @@ class EditorWidget extends HookConsumerWidget {
     KeyEvent event,
     EditorState state,
     Editor notifier,
+    ValueNotifier<bool> shouldAutoScroll,
   ) {
     if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
       return KeyEventResult.ignored;
@@ -192,7 +199,7 @@ class EditorWidget extends HookConsumerWidget {
     final bool isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
 
     // Handle shortcuts
-    if (_handleShortcuts(event, state, notifier)) {
+    if (_handleShortcuts(event, state, notifier, shouldAutoScroll)) {
       return KeyEventResult.handled;
     }
 
@@ -239,6 +246,7 @@ class EditorWidget extends HookConsumerWidget {
     final verticalOffset = useState(0.0);
     final horizontalOffset = useState(0.0);
     final isDragging = useState(false);
+    final shouldAutoScroll = useState(true);
     final GlobalKey painterKey = GlobalKey();
 
     final scrollSync = useMemoized(
@@ -285,6 +293,11 @@ class EditorWidget extends HookConsumerWidget {
 
     // Scroll-to-cursor
     useEffect(() {
+      if (!shouldAutoScroll.value) {
+        shouldAutoScroll.value = true;
+        return null;
+      }
+
       if (!verticalScrollController.hasClients ||
           !verticalScrollController.position.hasViewportDimension ||
           !horizontalScrollController.hasClients ||
@@ -356,7 +369,7 @@ class EditorWidget extends HookConsumerWidget {
       }
 
       return null;
-    }, [state.cursor]);
+    }, [state.cursor, state.selection]);
 
     useEffect(() {
       void updateVerticalOffset() {
@@ -532,8 +545,13 @@ class EditorWidget extends HookConsumerWidget {
                   child: Focus(
                     autofocus: true,
                     focusNode: focusNode,
-                    onKeyEvent: (node, event) =>
-                        _handleKeyEvent(node, event, state, notifier),
+                    onKeyEvent: (node, event) => _handleKeyEvent(
+                      node,
+                      event,
+                      state,
+                      notifier,
+                      shouldAutoScroll,
+                    ),
                     child: GestureDetector(
                       onTapDown: (details) => _handleTapDown(
                         details,

@@ -71,7 +71,10 @@ class Editor extends _$Editor {
     final cursor = state.cursor;
     Cursor newCursor = cursor;
 
-    if (cursor.row == 0 && cursor.column == 0) return;
+    if (cursor.row == 0 && cursor.column == 0) {
+      updateSelection(newCursor, extendSelection);
+      return;
+    }
 
     if (cursor.row > 0 && cursor.column == 0) {
       // Move to end of previous line.
@@ -101,7 +104,10 @@ class Editor extends _$Editor {
     final lineCount = state.buffer.lineCountWithTrailingNewline() - 1;
     final lastLineLength = state.buffer.lineLen(row: lineCount);
 
-    if (cursor.row == lineCount && cursor.column == lastLineLength) return;
+    if (cursor.row == lineCount && cursor.column == lastLineLength) {
+      updateSelection(newCursor, extendSelection);
+      return;
+    }
 
     final lineLength = state.buffer.lineLen(row: cursor.row);
     if (cursor.row < lineCount && cursor.column == lineLength) {
