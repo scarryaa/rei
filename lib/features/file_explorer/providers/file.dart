@@ -50,8 +50,36 @@ class File extends _$File {
   List<FileEntry> _loadChildren(String directoryPath) {
     try {
       final dir = IO.Directory(directoryPath);
-      return dir
-          .listSync()
+      final files = dir.listSync();
+      files.sort((a, b) {
+        if (a is IO.Directory && b is IO.Directory) {
+          return a.path
+              .split(IO.Platform.pathSeparator)
+              .last
+              .toLowerCase()
+              .compareTo(
+                b.path.split(IO.Platform.pathSeparator).last.toLowerCase(),
+              );
+        }
+
+        if (a is IO.Directory) {
+          return -1;
+        }
+
+        if (b is IO.Directory) {
+          return 1;
+        }
+
+        return a.path
+            .split(IO.Platform.pathSeparator)
+            .last
+            .toLowerCase()
+            .compareTo(
+              b.path.split(IO.Platform.pathSeparator).last.toLowerCase(),
+            );
+      });
+
+      return files
           .map(
             (item) => FileEntry(
               path: item.path,

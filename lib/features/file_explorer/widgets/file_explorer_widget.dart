@@ -113,7 +113,7 @@ class FileEntryWidget extends HookConsumerWidget {
             spacing: 8.0,
             children: [
               Icon(
-                isDirectory ? Icons.folder : Icons.article,
+                isDirectory ? Icons.folder : Icons.insert_drive_file_rounded,
                 size: 15.0,
                 color: Color(0xBBFFFFFF),
               ),
