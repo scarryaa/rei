@@ -13,6 +13,7 @@ class EditorPainter extends CustomPainter {
     required this.fontMetrics,
     required this.firstVisibleLine,
     required this.firstVisibleChar,
+    required this.lastVisibleLine,
     required this.startCharOffset,
     required this.endCharOffset,
   });
@@ -24,6 +25,7 @@ class EditorPainter extends CustomPainter {
   final FontMetrics fontMetrics;
   final int firstVisibleLine;
   final int firstVisibleChar;
+  final int lastVisibleLine;
   final int startCharOffset;
   final int endCharOffset;
 
@@ -68,7 +70,7 @@ class EditorPainter extends CustomPainter {
 
   void drawSelection(Canvas canvas, Size size) {
     final normalized = selection.normalized();
-    final visibleLineCount = (size.height / fontMetrics.lineHeight).ceil();
+    final visibleLineCount = lastVisibleLine - firstVisibleLine;
 
     if (normalized.isEmpty()) {
       return;

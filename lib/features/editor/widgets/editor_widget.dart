@@ -602,6 +602,7 @@ class EditorWidget extends HookConsumerWidget {
                             startCharOffset: charOffset.start,
                             endCharOffset: charOffset.end,
                             firstVisibleChar: visibleChars.first,
+                            lastVisibleLine: visibleLines.last,
                           ),
                         ),
                       ),
