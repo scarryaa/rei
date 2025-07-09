@@ -113,15 +113,6 @@ class EditorWidget extends HookConsumerWidget {
     ValueNotifier<bool> isDragging,
   ) {
     isDragging.value = false;
-
-    final newCursor = _offsetToCursorPosition(
-      details.globalPosition,
-      painterKey,
-      state,
-      metrics,
-    );
-
-    notifier.moveTo(newCursor);
   }
 
   void _handlePaste(EditorState state, Editor notifier) async {
