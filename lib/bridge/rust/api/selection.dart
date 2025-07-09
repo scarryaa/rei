@@ -18,6 +18,9 @@ sealed class Selection with _$Selection {
   const Selection._();
   const factory Selection.raw({required Cursor start, required Cursor end}) =
       _Selection;
+  bool contains({required int row}) => RustLib.instance.api
+      .crateApiSelectionSelectionContains(that: this, row: row);
+
   static Selection default_() =>
       RustLib.instance.api.crateApiSelectionSelectionDefault();
 

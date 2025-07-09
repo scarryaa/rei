@@ -43,4 +43,9 @@ impl Selection {
     pub fn is_empty(&self) -> bool {
         self.start == self.end
     }
+
+    #[frb(sync, type_64bit_int)]
+    pub fn contains(&self, row: usize) -> bool {
+        !self.is_empty() && self.start.row <= row && self.end.row >= row
+    }
 }

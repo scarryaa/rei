@@ -139,6 +139,7 @@ class GutterWidget extends HookConsumerWidget {
 
         final viewportHeight =
             verticalScrollController.position.viewportDimension;
+
         double verticalOffset;
         if (verticalScrollController.offset + viewportHeight > size.height) {
           verticalOffset = size.height - viewportHeight;
@@ -171,44 +172,32 @@ class GutterWidget extends HookConsumerWidget {
       ],
     );
 
-    final textPainter = useMemoized(() {
-      String text = '';
-      for (var i = visibleLines.first; i < max(1, visibleLines.last); i++) {
-        text += '${i + 1}\n';
-      }
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final height = max(size.height, constraints.maxHeight);
+        Size newSize = Size(size.width, height);
 
-      final innerTextPainter = TextPainter(
-        textDirection: TextDirection.ltr,
-        text: TextSpan(
-          text: text,
-          style: textStyle.copyWith(color: Color(0x50FFFFFF)),
-        ),
-        textAlign: TextAlign.end,
-      );
-      innerTextPainter.layout();
-      textPainterWidth.value = innerTextPainter.width;
-
-      return innerTextPainter;
-    }, [editorState.buffer.version, visibleLines]);
-
-    return ScrollConfiguration(
-      behavior: ScrollBehavior().copyWith(
-        overscroll: false,
-        scrollbars: false,
-        physics: ClampingScrollPhysics(),
-      ),
-      child: SingleChildScrollView(
-        controller: verticalScrollController,
-        child: CustomPaint(
-          willChange: true,
-          size: size,
-          painter: GutterPainter(
-            textPainter: textPainter,
-            visibleLines: visibleLines,
-            fontMetrics: fontMetrics,
+        return ScrollConfiguration(
+          behavior: ScrollBehavior().copyWith(
+            overscroll: false,
+            scrollbars: false,
+            physics: ClampingScrollPhysics(),
           ),
-        ),
-      ),
+          child: SingleChildScrollView(
+            controller: verticalScrollController,
+            child: CustomPaint(
+              willChange: true,
+              size: newSize,
+              painter: GutterPainter(
+                visibleLines: visibleLines,
+                fontMetrics: fontMetrics,
+                state: editorState,
+                textStyle: textStyle,
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
