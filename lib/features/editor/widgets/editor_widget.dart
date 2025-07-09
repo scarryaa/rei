@@ -12,9 +12,14 @@ import 'package:rei/features/editor/providers/editor.dart';
 import 'package:rei/features/editor/widgets/painters/editor_painter.dart';
 
 class EditorWidget extends HookConsumerWidget {
-  const EditorWidget({super.key, required this.textStyle});
+  const EditorWidget({
+    super.key,
+    required this.textStyle,
+    required this.fontMetrics,
+  });
 
   final TextStyle textStyle;
+  final FontMetrics fontMetrics;
 
   Cursor _offsetToCursorPosition(
     Offset offset,
@@ -233,19 +238,6 @@ class EditorWidget extends HookConsumerWidget {
 
     useListenable(verticalScrollController);
     useListenable(horizontalScrollController);
-
-    final fontMetrics = useMemoized(() {
-      final innerCharPainter = TextPainter(
-        textDirection: TextDirection.ltr,
-        text: TextSpan(text: 'W', style: textStyle),
-      );
-      innerCharPainter.layout();
-
-      return FontMetrics(
-        lineHeight: innerCharPainter.preferredLineHeight,
-        charWidth: innerCharPainter.width,
-      );
-    }, [textStyle]);
 
     final padding = useMemoized(() {
       final verticalMultiplier = 5.0;

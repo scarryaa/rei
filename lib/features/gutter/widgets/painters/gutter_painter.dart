@@ -11,7 +11,7 @@ class GutterPainter extends CustomPainter {
   }
 
   void drawLines(Canvas canvas, Size size) {
-    textPainter.paint(canvas, Offset.zero);
+    textPainter.paint(canvas, Offset((size.width - textPainter.width) / 2, 0));
   }
 
   @override
