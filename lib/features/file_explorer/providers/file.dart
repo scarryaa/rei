@@ -17,15 +17,40 @@ class File extends _$File {
     state = root;
   }
 
-  Future<void> selectDirectory() async {
-    final rootDir = await FilePicker.platform.getDirectoryPath(
-      dialogTitle: 'Select a directory',
-      initialDirectory: '',
-    );
+  void toggleExpansion(String path) {
+    if (state == null) return;
 
-    if (rootDir != null) {
-      final dir = IO.Directory(rootDir);
-      final children = dir
+    state = _toggleExpansionHelper(state!, path);
+  }
+
+  FileEntry _toggleExpansionHelper(FileEntry entry, String targetPath) {
+    if (entry.path == targetPath) {
+      if (entry.isDirectory) {
+        if (!entry.isExpanded && entry.children.isEmpty) {
+          // First time expanding - load children.
+          final children = _loadChildren(entry.path);
+
+          return entry.copyWith(isExpanded: true, children: children);
+        } else {
+          // Just toggle it.
+          return entry.copyWith(isExpanded: !entry.isExpanded);
+        }
+      }
+
+      return entry;
+    }
+
+    final updatedChildren = entry.children.map((child) {
+      return _toggleExpansionHelper(child, targetPath);
+    }).toList();
+
+    return entry.copyWith(children: updatedChildren);
+  }
+
+  List<FileEntry> _loadChildren(String directoryPath) {
+    try {
+      final dir = IO.Directory(directoryPath);
+      return dir
           .listSync()
           .map(
             (item) => FileEntry(
@@ -35,6 +60,47 @@ class File extends _$File {
             ),
           )
           .toList();
+    } catch (e) {
+      return [];
+    }
+  }
+
+  FileEntry? _findFileByPath(String path) {
+    if (state != null) {
+      return _findFileHelper(state!, path);
+    }
+
+    return null;
+  }
+
+  FileEntry? _findFileHelper(FileEntry startingFile, String path) {
+    if (path == startingFile.path) {
+      return startingFile;
+    }
+
+    for (final child in startingFile.children) {
+      if (child.path == path) {
+        return child;
+      }
+      if (child.children.isNotEmpty && child.isDirectory) {
+        final result = _findFileHelper(child, path);
+        if (result != null) {
+          return result;
+        }
+      }
+    }
+
+    return null;
+  }
+
+  Future<void> selectDirectory() async {
+    final rootDir = await FilePicker.platform.getDirectoryPath(
+      dialogTitle: 'Select a directory',
+      initialDirectory: '',
+    );
+
+    if (rootDir != null) {
+      final children = _loadChildren(rootDir);
 
       state = FileEntry(
         path: rootDir,

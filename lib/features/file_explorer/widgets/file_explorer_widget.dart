@@ -44,25 +44,33 @@ class FileExplorerWidget extends HookConsumerWidget {
     );
   }
 
+  List<Widget> _buildFileTree(File notifier, FileEntry entry, int depth) {
+    List<Widget> widgets = [];
+
+    widgets.add(
+      FileEntryWidget(
+        isExpanded: entry.isExpanded,
+        path: entry.path,
+        name: entry.name,
+        isDirectory: entry.isDirectory,
+        notifier: notifier,
+        depth: depth,
+      ),
+    );
+
+    if (entry.isDirectory && entry.isExpanded) {
+      for (FileEntry child in entry.children) {
+        widgets.addAll(_buildFileTree(notifier, child, depth + 1));
+      }
+    }
+
+    return widgets;
+  }
+
   Widget _buildDirectoryView(File notifier, FileEntry state) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        FileEntryWidget(
-          isExpanded: state.isExpanded,
-          path: state.path,
-          name: state.name,
-          isDirectory: true,
-        ),
-        ...state.children.map(
-          (item) => FileEntryWidget(
-            isExpanded: item.isExpanded,
-            path: item.path,
-            name: item.name,
-            isDirectory: item.isDirectory,
-          ),
-        ),
-      ],
+      children: _buildFileTree(notifier, state, 0),
     );
   }
 }
@@ -74,12 +82,16 @@ class FileEntryWidget extends HookConsumerWidget {
     required this.path,
     required this.isExpanded,
     required this.isDirectory,
+    required this.notifier,
+    this.depth = 0,
   });
 
   final String name;
   final String path;
   final bool isExpanded;
   final bool isDirectory;
+  final File notifier;
+  final int depth;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -88,26 +100,33 @@ class FileEntryWidget extends HookConsumerWidget {
     return MouseRegion(
       onEnter: (event) => isHovered.value = true,
       onExit: (event) => isHovered.value = false,
-      child: Container(
-        color: isHovered.value ? Colors.lightBlue.withValues(alpha: 0.3) : null,
-        padding: EdgeInsets.only(left: 8.0),
-        child: Row(
-          spacing: 8.0,
-          children: [
-            Icon(
-              isDirectory ? Icons.folder : Icons.article,
-              size: 15.0,
-              color: Color(0xBBFFFFFF),
-            ),
-            Text(
-              name,
-              style: TextStyle(
-                color: Color(0xAAFFFFFF),
-                fontSize: 15.0,
-                fontFamily: 'IBM Plex Sans',
+      child: GestureDetector(
+        onTapDown: (details) {
+          notifier.toggleExpansion(path);
+        },
+        child: Container(
+          color: isHovered.value
+              ? Colors.lightBlue.withValues(alpha: 0.3)
+              : null,
+          padding: EdgeInsets.only(left: 8.0 + (depth * 16.0)),
+          child: Row(
+            spacing: 8.0,
+            children: [
+              Icon(
+                isDirectory ? Icons.folder : Icons.article,
+                size: 15.0,
+                color: Color(0xBBFFFFFF),
               ),
-            ),
-          ],
+              Text(
+                name,
+                style: TextStyle(
+                  color: Color(0xAAFFFFFF),
+                  fontSize: 15.0,
+                  fontFamily: 'IBM Plex Sans',
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
