@@ -162,26 +162,45 @@ impl Buffer {
         start_char_offset: usize,
         end_char_offset: usize,
     ) -> String {
-        if self.line_count() == 0 {
-            return "".to_string();
+        if self.line_count() == 0 || start_row >= end_row {
+            return String::new();
         }
 
-        let lines: Vec<String> = self
-            .text
-            .lines()
-            .skip(start_row)
-            .take(end_row - start_row)
-            .map(|line| {
-                if start_char_offset > line.byte_len() {
-                    return "".to_string();
-                }
+        if end_row - start_row == 1 {
+            let line = self.text.line(start_row);
+            let line_len = line.byte_len();
 
-                line.byte_slice(start_char_offset..end_char_offset.min(line.byte_len()))
-                    .to_string()
-            })
-            .collect();
+            if start_char_offset >= line_len {
+                return String::new();
+            }
 
-        lines.join("\n")
+            let slice_end = end_char_offset.min(line_len);
+            if start_char_offset < slice_end {
+                return line.byte_slice(start_char_offset..slice_end).to_string();
+            }
+            return String::new();
+        }
+
+        let mut parts = Vec::with_capacity(end_row - start_row);
+
+        for row in start_row..end_row {
+            let line = self.text.line(row);
+            let line_len = line.byte_len();
+
+            if start_char_offset >= line_len {
+                parts.push("".to_string());
+                continue;
+            }
+
+            let slice_end = end_char_offset.min(line_len);
+            if start_char_offset < slice_end {
+                parts.push(line.byte_slice(start_char_offset..slice_end).to_string());
+            } else {
+                parts.push("".to_string());
+            }
+        }
+
+        parts.join("\n")
     }
 
     #[frb(sync, type_64bit_int)]
