@@ -53,6 +53,7 @@ class FileExplorerWidget extends HookConsumerWidget {
         path: entry.path,
         name: entry.name,
         isDirectory: entry.isDirectory,
+        isHidden: entry.isHidden,
         notifier: notifier,
         depth: depth,
       ),
@@ -82,6 +83,7 @@ class FileEntryWidget extends HookConsumerWidget {
     required this.path,
     required this.isExpanded,
     required this.isDirectory,
+    required this.isHidden,
     required this.notifier,
     this.depth = 0,
   });
@@ -90,6 +92,7 @@ class FileEntryWidget extends HookConsumerWidget {
   final String path;
   final bool isExpanded;
   final bool isDirectory;
+  final bool isHidden;
   final File notifier;
   final int depth;
 
@@ -115,12 +118,12 @@ class FileEntryWidget extends HookConsumerWidget {
               Icon(
                 isDirectory ? Icons.folder : Icons.insert_drive_file_rounded,
                 size: 15.0,
-                color: Color(0xBBFFFFFF),
+                color: isHidden ? Color(0x70FFFFFF) : Color(0xBBFFFFFF),
               ),
               Text(
                 name,
                 style: TextStyle(
-                  color: Color(0xAAFFFFFF),
+                  color: isHidden ? Color(0x65FFFFFF) : Color(0xAAFFFFFF),
                   fontSize: 15.0,
                   fontFamily: 'IBM Plex Sans',
                 ),

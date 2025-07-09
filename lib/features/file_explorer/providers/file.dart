@@ -28,7 +28,7 @@ class File extends _$File {
       if (entry.isDirectory) {
         if (!entry.isExpanded && entry.children.isEmpty) {
           // First time expanding - load children.
-          final children = _loadChildren(entry.path);
+          final children = _loadChildren(entry, entry.path);
 
           return entry.copyWith(isExpanded: true, children: children);
         } else {
@@ -47,10 +47,11 @@ class File extends _$File {
     return entry.copyWith(children: updatedChildren);
   }
 
-  List<FileEntry> _loadChildren(String directoryPath) {
+  List<FileEntry> _loadChildren(FileEntry? parent, String directoryPath) {
     try {
       final dir = IO.Directory(directoryPath);
       final files = dir.listSync();
+
       files.sort((a, b) {
         if (a is IO.Directory && b is IO.Directory) {
           return a.path
@@ -79,15 +80,17 @@ class File extends _$File {
             );
       });
 
-      return files
-          .map(
-            (item) => FileEntry(
-              path: item.path,
-              name: item.path.split(IO.Platform.pathSeparator).last,
-              isDirectory: item is IO.Directory,
-            ),
-          )
-          .toList();
+      return files.map((item) {
+        final name = item.path.split(IO.Platform.pathSeparator).last;
+
+        return FileEntry(
+          path: item.path,
+          parent: parent,
+          name: name,
+          isDirectory: item is IO.Directory,
+          isHidden: name.startsWith('.') || (parent != null && parent.isHidden),
+        );
+      }).toList();
     } catch (e) {
       return [];
     }
@@ -128,15 +131,21 @@ class File extends _$File {
     );
 
     if (rootDir != null) {
-      final children = _loadChildren(rootDir);
-
-      state = FileEntry(
+      final name = rootDir.split(IO.Platform.pathSeparator).last;
+      FileEntry root = FileEntry(
         path: rootDir,
-        name: rootDir.split(IO.Platform.pathSeparator).last,
+        name: name,
+        parent: null,
+        isHidden: name.startsWith('.'),
         isDirectory: true,
         isExpanded: true,
-        children: children,
+        children: [],
       );
+
+      final children = _loadChildren(root, rootDir);
+      root = root.copyWith(children: children);
+
+      state = root;
     }
   }
 }
