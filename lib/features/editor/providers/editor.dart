@@ -226,6 +226,21 @@ class Editor extends _$Editor {
     clearSelection();
   }
 
+  void selectLine(int row) {
+    final lineLength = state.buffer.lineLen(row: row);
+
+    final startCursor = Cursor(row: row, column: 0, stickyColumn: 0);
+    final endCursor = Cursor(
+      row: row,
+      column: lineLength,
+      stickyColumn: lineLength,
+    );
+
+    final newSelection = Selection(start: startCursor, end: endCursor);
+
+    state = state.copyWith(selection: newSelection);
+  }
+
   void selectAll() {
     final lineCount = state.buffer.lineCountWithTrailingNewline() - 1;
     final lastLineLength = state.buffer.lineLen(row: lineCount);

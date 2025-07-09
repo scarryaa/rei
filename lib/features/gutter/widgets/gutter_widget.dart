@@ -2,7 +2,9 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:rei/bridge/rust/api/cursor.dart';
 import 'package:rei/features/editor/models/font_metrics.dart';
+import 'package:rei/features/editor/models/state.dart';
 import 'package:rei/features/editor/providers/editor.dart';
 import 'package:rei/features/gutter/widgets/painters/gutter_painter.dart';
 import 'package:rei/shared/providers/scroll_sync.dart';
@@ -17,12 +19,159 @@ class GutterWidget extends HookConsumerWidget {
   final TextStyle textStyle;
   final FontMetrics fontMetrics;
 
+  Cursor _offsetToCursorPosition(
+    Offset offset,
+    GlobalKey painterKey,
+    EditorState state,
+    FontMetrics metrics, {
+    bool columnAtStart = true,
+  }) {
+    final renderBox =
+        painterKey.currentContext?.findRenderObject() as RenderBox?;
+
+    if (renderBox != null) {
+      final globalPosition = renderBox.globalToLocal(offset);
+      final newRow = (globalPosition.dy / metrics.lineHeight).floor();
+
+      final lineCount = max(0, state.buffer.lineCount() - 1);
+      final clampedRow = min(max(0, newRow), lineCount);
+      final targetLineLength = state.buffer.lineLen(row: clampedRow);
+
+      final newColumn = columnAtStart ? 0 : targetLineLength;
+      final clampedColumn = min(max(0, newColumn), targetLineLength);
+
+      return Cursor(
+        row: clampedRow,
+        column: clampedColumn,
+        stickyColumn: clampedColumn,
+      );
+    }
+
+    return state.cursor;
+  }
+
+  void _handleTapDown(
+    TapDownDetails details,
+    GlobalKey painterKey,
+    EditorState state,
+    Editor notifier,
+    FontMetrics metrics,
+  ) {
+    final newCursor = _offsetToCursorPosition(
+      details.globalPosition,
+      painterKey,
+      state,
+      metrics,
+      columnAtStart: false,
+    );
+
+    notifier.clearSelection();
+    notifier.selectLine(newCursor.row);
+    notifier.moveTo(newCursor);
+  }
+
+  void _handlePanStart(
+    DragStartDetails details,
+    GlobalKey painterKey,
+    EditorState state,
+    Editor notifier,
+    FontMetrics metrics,
+    ValueNotifier<bool> isDragging,
+    ValueNotifier<int?> dragStartLine,
+  ) {
+    isDragging.value = true;
+
+    final newCursor = _offsetToCursorPosition(
+      details.globalPosition,
+      painterKey,
+      state,
+      metrics,
+      columnAtStart: false,
+    );
+
+    if (dragStartLine.value == null) {
+      dragStartLine.value = newCursor.row;
+    }
+
+    notifier.clearSelection();
+    notifier.selectLine(newCursor.row);
+    notifier.moveTo(newCursor);
+  }
+
+  void _handlePanUpdate(
+    DragUpdateDetails details,
+    GlobalKey painterKey,
+    EditorState state,
+    Editor notifier,
+    FontMetrics metrics,
+    ValueNotifier<bool> isDragging,
+    ValueNotifier<int?> dragStartLine,
+  ) {
+    if (isDragging.value && dragStartLine.value != null) {
+      Cursor tenativeCursor = _offsetToCursorPosition(
+        details.globalPosition,
+        painterKey,
+        state,
+        metrics,
+      );
+      if (tenativeCursor.row < dragStartLine.value!) {
+        final startLineLength = state.buffer.lineLen(row: dragStartLine.value!);
+        final startCursor = Cursor(
+          row: dragStartLine.value!,
+          column: startLineLength,
+          stickyColumn: startLineLength,
+        );
+        final newCursor = tenativeCursor.copyWith(column: 0, stickyColumn: 0);
+
+        notifier.clearSelection();
+        notifier.startSelection(startCursor, true);
+        notifier.updateSelection(newCursor, true);
+        notifier.moveTo(newCursor);
+      } else {
+        final lineLength = state.buffer.lineLen(row: tenativeCursor.row);
+        final startCursor = Cursor(
+          row: dragStartLine.value!,
+          column: 0,
+          stickyColumn: 0,
+        );
+        final newCursor = tenativeCursor.copyWith(
+          column: lineLength,
+          stickyColumn: lineLength,
+        );
+
+        notifier.clearSelection();
+        notifier.startSelection(startCursor, true);
+        notifier.updateSelection(newCursor, true);
+        notifier.moveTo(newCursor);
+      }
+    }
+  }
+
+  void _handlePanEnd(
+    DragEndDetails details,
+    GlobalKey painterKey,
+    EditorState state,
+    Editor notifier,
+    FontMetrics metrics,
+    ValueNotifier<bool> isDragging,
+    ValueNotifier<int?> dragStartLine,
+  ) {
+    isDragging.value = false;
+    dragStartLine.value = null;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final verticalScrollController = useScrollController();
     final editorState = ref.watch(editorProvider);
+    final editorNotifier = ref.read(editorProvider.notifier);
+
     final textPainterWidth = useState(0.0);
     final verticalOffset = useState(0.0);
+
+    final ValueNotifier<int?> dragStartLine = useState(null);
+    final isDragging = useState(false);
+    final GlobalKey painterKey = GlobalKey();
 
     final scrollSyncState = ref.watch(scrollSyncProvider);
     final scrollSyncNotifier = ref.read(scrollSyncProvider.notifier);
@@ -166,14 +315,51 @@ class GutterWidget extends HookConsumerWidget {
           ),
           child: SingleChildScrollView(
             controller: verticalScrollController,
-            child: CustomPaint(
-              willChange: true,
-              size: newSize,
-              painter: GutterPainter(
-                visibleLines: visibleLines,
-                fontMetrics: fontMetrics,
-                state: editorState,
-                textStyle: textStyle,
+            child: GestureDetector(
+              onTapDown: (details) => _handleTapDown(
+                details,
+                painterKey,
+                editorState,
+                editorNotifier,
+                fontMetrics,
+              ),
+              onPanStart: (details) => _handlePanStart(
+                details,
+                painterKey,
+                editorState,
+                editorNotifier,
+                fontMetrics,
+                isDragging,
+                dragStartLine,
+              ),
+              onPanUpdate: (details) => _handlePanUpdate(
+                details,
+                painterKey,
+                editorState,
+                editorNotifier,
+                fontMetrics,
+                isDragging,
+                dragStartLine,
+              ),
+              onPanEnd: (details) => _handlePanEnd(
+                details,
+                painterKey,
+                editorState,
+                editorNotifier,
+                fontMetrics,
+                isDragging,
+                dragStartLine,
+              ),
+              child: CustomPaint(
+                key: painterKey,
+                willChange: true,
+                size: newSize,
+                painter: GutterPainter(
+                  visibleLines: visibleLines,
+                  fontMetrics: fontMetrics,
+                  state: editorState,
+                  textStyle: textStyle,
+                ),
               ),
             ),
           ),
