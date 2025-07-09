@@ -22,6 +22,8 @@ class GutterWidget extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final verticalScrollController = useScrollController();
     final editorState = ref.watch(editorProvider);
+    final textPainterWidth = useState(0.0);
+    final verticalOffset = useState(0.0);
 
     final scrollSyncState = ref.watch(scrollSyncProvider);
     final scrollSyncNotifier = ref.read(scrollSyncProvider.notifier);
@@ -71,18 +73,108 @@ class GutterWidget extends HookConsumerWidget {
       final horizontalMultiplier = 8.0;
       final vertical = verticalMultiplier * fontMetrics.lineHeight;
       final horizontal = horizontalMultiplier * fontMetrics.charWidth;
+
       return (horizontal: horizontal, vertical: vertical);
     }, [fontMetrics]);
 
+    final size = useMemoized(
+      () {
+        final width =
+            (textPainterWidth.value == 0
+                ? fontMetrics.charWidth
+                : textPainterWidth.value) +
+            padding.horizontal;
+        final height =
+            (editorState.buffer.lineCountWithTrailingNewline() *
+                fontMetrics.lineHeight) +
+            padding.vertical;
+
+        return Size(width, height);
+      },
+      [
+        padding,
+        fontMetrics,
+        editorState.buffer.version,
+        textPainterWidth.value,
+      ],
+    );
+
+    useEffect(() {
+      void updateVerticalOffset() {
+        if (!verticalScrollController.hasClients ||
+            !verticalScrollController.position.hasContentDimensions) {
+          return;
+        }
+
+        final newOffset = min(
+          verticalScrollController.offset,
+          verticalScrollController.position.maxScrollExtent,
+        );
+
+        if (verticalOffset.value != newOffset) {
+          verticalOffset.value = newOffset;
+        }
+      }
+
+      void verticalScrollListener() {
+        updateVerticalOffset();
+      }
+
+      verticalScrollController.addListener(verticalScrollListener);
+      updateVerticalOffset();
+
+      return () {
+        verticalScrollController.removeListener(verticalScrollListener);
+      };
+    }, [editorState.buffer.version, editorState.cursor]);
+
+    final visibleLines = useMemoized(
+      () {
+        if (!verticalScrollController.hasClients ||
+            !verticalScrollController.position.hasViewportDimension) {
+          return (first: 0, last: 0);
+        }
+
+        final viewportHeight =
+            verticalScrollController.position.viewportDimension;
+        double verticalOffset;
+        if (verticalScrollController.offset + viewportHeight > size.height) {
+          verticalOffset = size.height - viewportHeight;
+        } else {
+          verticalOffset = verticalScrollController.offset;
+        }
+
+        final firstVisibleLine = max(
+          0,
+          min(
+            ((verticalOffset) / fontMetrics.lineHeight).floor(),
+            editorState.buffer.lineCount() - 1,
+          ),
+        );
+        final lastVisibleLine = max(
+          0,
+          min(
+            ((verticalOffset + viewportHeight) / fontMetrics.lineHeight).ceil(),
+            editorState.buffer.lineCountWithTrailingNewline(),
+          ),
+        );
+
+        return (first: firstVisibleLine, last: lastVisibleLine);
+      },
+      [
+        editorState.buffer.version,
+        editorState.cursor,
+        verticalOffset.value,
+        size,
+      ],
+    );
+
     final textPainter = useMemoized(() {
       String text = '';
-      for (
-        var i = 0;
-        i < max(1, editorState.buffer.lineCountWithTrailingNewline());
-        i++
-      ) {
+      for (var i = visibleLines.first; i < max(1, visibleLines.last); i++) {
         text += '${i + 1}\n';
       }
+
       final innerTextPainter = TextPainter(
         textDirection: TextDirection.ltr,
         text: TextSpan(
@@ -92,17 +184,10 @@ class GutterWidget extends HookConsumerWidget {
         textAlign: TextAlign.end,
       );
       innerTextPainter.layout();
-      return innerTextPainter;
-    }, [editorState.buffer.version]);
+      textPainterWidth.value = innerTextPainter.width;
 
-    final size = useMemoized(() {
-      final width = textPainter.width + padding.horizontal;
-      final height =
-          (editorState.buffer.lineCountWithTrailingNewline() *
-              fontMetrics.lineHeight) +
-          padding.vertical;
-      return Size(width, height);
-    }, [padding, fontMetrics, editorState.buffer.version]);
+      return innerTextPainter;
+    }, [editorState.buffer.version, visibleLines]);
 
     return ScrollConfiguration(
       behavior: ScrollBehavior().copyWith(
@@ -115,7 +200,11 @@ class GutterWidget extends HookConsumerWidget {
         child: CustomPaint(
           willChange: true,
           size: size,
-          painter: GutterPainter(textPainter: textPainter),
+          painter: GutterPainter(
+            textPainter: textPainter,
+            visibleLines: visibleLines,
+            fontMetrics: fontMetrics,
+          ),
         ),
       ),
     );
