@@ -12,7 +12,9 @@ import 'package:rei/features/editor/providers/editor.dart';
 import 'package:rei/features/editor/widgets/painters/editor_painter.dart';
 
 class EditorWidget extends HookConsumerWidget {
-  const EditorWidget({super.key});
+  const EditorWidget({super.key, required this.textStyle});
+
+  final TextStyle textStyle;
 
   Cursor _offsetToCursorPosition(
     Offset offset,
@@ -231,14 +233,6 @@ class EditorWidget extends HookConsumerWidget {
 
     useListenable(verticalScrollController);
     useListenable(horizontalScrollController);
-
-    final textStyle = useMemoized(
-      () => TextStyle(
-        fontSize: 15.0,
-        fontFamily: 'IBM Plex Mono',
-        color: Colors.white,
-      ),
-    );
 
     final fontMetrics = useMemoized(() {
       final innerCharPainter = TextPainter(
