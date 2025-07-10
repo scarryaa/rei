@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:rei/features/file_explorer/models/file_entry.dart';
@@ -17,12 +18,30 @@ class FileExplorerWidget extends HookConsumerWidget {
     height: 1.4,
   );
 
+  KeyEventResult _handleKeyEvent(
+    FocusNode node,
+    KeyEvent event,
+    File notifier,
+  ) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+      return KeyEventResult.ignored;
+    }
+
+    switch (event.logicalKey) {
+      case LogicalKeyboardKey.arrowDown:
+        notifier.selectNext();
+    }
+
+    return KeyEventResult.handled;
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(fileProvider);
     final notifier = ref.read(fileProvider.notifier);
     final verticalScrollController = useScrollController();
     final horizontalScrollController = useScrollController();
+    final focusNode = useFocusNode();
 
     return Material(
       type: MaterialType.transparency,
@@ -31,13 +50,14 @@ class FileExplorerWidget extends HookConsumerWidget {
         decoration: BoxDecoration(
           border: Border(right: BorderSide(color: const Color(0x10FFFFFF))),
         ),
-        child: state == null
+        child: state.root == null
             ? _buildEmptyView(notifier)
             : _buildDirectoryView(
                 verticalScrollController,
                 horizontalScrollController,
+                focusNode,
                 notifier,
-                state,
+                state.root!,
               ),
       ),
     );
@@ -88,6 +108,7 @@ class FileExplorerWidget extends HookConsumerWidget {
   Widget _buildDirectoryView(
     ScrollController verticalScrollController,
     ScrollController horizontalScrollController,
+    FocusNode focusNode,
     File notifier,
     FileEntry state,
   ) {
@@ -123,19 +144,24 @@ class FileExplorerWidget extends HookConsumerWidget {
                   child: SingleChildScrollView(
                     controller: horizontalScrollController,
                     scrollDirection: Axis.horizontal,
-                    child: SizedBox(
-                      width: maxWidth,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          ..._buildFileTree(notifier, state, 0),
-                          SizedBox(
-                            width: maxWidth,
-                            height: size.height > constraints.maxHeight
-                                ? FileEntryWidget.depthPadding * 5
-                                : 0.0,
-                          ),
-                        ],
+                    child: Focus(
+                      focusNode: focusNode,
+                      onKeyEvent: (node, event) =>
+                          _handleKeyEvent(node, event, notifier),
+                      child: SizedBox(
+                        width: maxWidth,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            ..._buildFileTree(notifier, state, 0),
+                            SizedBox(
+                              width: maxWidth,
+                              height: size.height > constraints.maxHeight
+                                  ? FileEntryWidget.depthPadding * 5
+                                  : 0.0,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),

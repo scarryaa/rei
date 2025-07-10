@@ -1,5 +1,6 @@
 import 'package:file_picker/file_picker.dart';
 import 'package:rei/features/file_explorer/models/file_entry.dart';
+import 'package:rei/features/file_explorer/models/file_explorer_state.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 // ignore: library_prefixes
 import 'dart:io' as IO;
@@ -9,18 +10,18 @@ part 'file.g.dart';
 @riverpod
 class File extends _$File {
   @override
-  FileEntry? build() {
-    return null;
+  FileExplorerState build() {
+    return FileExplorerState(root: null);
   }
 
   void setRoot(FileEntry root) {
-    state = root;
+    state = state.copyWith(root: root);
   }
 
   void toggleExpansion(String path) {
-    if (state == null) return;
+    if (state.root == null) return;
 
-    state = _toggleExpansionHelper(state!, path);
+    state = state.copyWith(root: _toggleExpansionHelper(state.root!, path));
   }
 
   FileEntry _toggleExpansionHelper(FileEntry entry, String targetPath) {
@@ -97,8 +98,8 @@ class File extends _$File {
   }
 
   FileEntry? _findFileByPath(String path) {
-    if (state != null) {
-      return _findFileHelper(state!, path);
+    if (state.root != null) {
+      return _findFileHelper(state.root!, path);
     }
 
     return null;
@@ -145,7 +146,9 @@ class File extends _$File {
       final children = _loadChildren(root, rootDir);
       root = root.copyWith(children: children);
 
-      state = root;
+      state = state.copyWith(root: root);
     }
   }
+
+  void selectNext() {}
 }
