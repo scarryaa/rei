@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
@@ -11,6 +12,7 @@ import 'package:rei/features/editor/models/state.dart';
 import 'package:rei/features/editor/providers/editor.dart';
 import 'package:rei/features/editor/widgets/painters/editor_painter.dart';
 import 'package:rei/shared/providers/scroll_sync.dart';
+import 'package:rei/shared/services/file_service.dart';
 
 class EditorWidget extends HookConsumerWidget {
   const EditorWidget({
@@ -242,6 +244,7 @@ class EditorWidget extends HookConsumerWidget {
     final notifier = ref.read(editorProvider.notifier);
     final verticalScrollController = useScrollController();
     final horizontalScrollController = useScrollController();
+    StreamSubscription? fileSubscription;
 
     final scrollSyncState = ref.watch(scrollSyncProvider);
     final scrollSyncNotifier = ref.read(scrollSyncProvider.notifier);
@@ -259,6 +262,15 @@ class EditorWidget extends HookConsumerWidget {
 
     useListenable(verticalScrollController);
     useListenable(horizontalScrollController);
+
+    useEffect(() {
+      fileSubscription = FileService.fileSelectedStream.listen((filePath) {
+        final fileContents = FileService.readFile(filePath);
+        notifier.openFile(fileContents);
+      });
+
+      return null;
+    }, []);
 
     useEffect(() {
       scrollSync.startListening();

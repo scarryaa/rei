@@ -19,6 +19,14 @@ class Editor extends _$Editor {
     );
   }
 
+  void openFile(String content) {
+    state = state.copyWith(
+      buffer: Buffer.from(text: content),
+      cursor: Cursor.default_(),
+      selection: Selection.default_(),
+    );
+  }
+
   void insert(String text) {
     if (!state.selection.isEmpty()) {
       deleteSelection();

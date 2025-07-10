@@ -16,6 +16,9 @@ abstract class Buffer implements RustOpaqueInterface {
 
   int byteOfLine({required int row});
 
+  static Buffer from({required String text}) =>
+      RustLib.instance.api.crateApiBufferBufferFrom(text: text);
+
   (int, int) idxToRowColumn({required int idx});
 
   (int, int) insert({

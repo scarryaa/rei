@@ -1,5 +1,6 @@
 use crop::Rope;
 use flutter_rust_bridge::frb;
+use rand::Rng;
 use std::collections::{BTreeMap, BTreeSet};
 
 #[frb(type_64bit_int)]
@@ -20,9 +21,33 @@ impl Buffer {
         line_lengths.insert(0, 0);
         length_index_set.insert((0, 0));
 
+        let version: u32 = rand::rng().random();
+
         Self {
             text: Rope::new(),
-            version: 0,
+            version: version as usize,
+            line_lengths,
+            length_index_set,
+        }
+    }
+
+    #[frb(sync)]
+    pub fn from(text: String) -> Self {
+        let mut line_lengths = BTreeMap::new();
+        let mut length_index_set = BTreeSet::new();
+
+        for (i, line) in text.lines().enumerate() {
+            let line_length = line.len();
+
+            line_lengths.insert(i, line_length);
+            length_index_set.insert((line_length, i));
+        }
+
+        let version: u32 = rand::rng().random();
+
+        Self {
+            text: Rope::from(text),
+            version: version as usize,
             line_lengths,
             length_index_set,
         }

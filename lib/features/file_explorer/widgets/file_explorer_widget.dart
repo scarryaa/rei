@@ -7,6 +7,7 @@ import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:rei/features/file_explorer/models/file_entry.dart';
 import 'package:rei/features/file_explorer/models/file_explorer_state.dart';
 import 'package:rei/features/file_explorer/providers/file.dart';
+import 'package:rei/shared/services/file_service.dart';
 
 class FileExplorerWidget extends HookConsumerWidget {
   const FileExplorerWidget({super.key});
@@ -289,7 +290,8 @@ class FileEntryWidget extends HookConsumerWidget {
           if (isDirectory) {
             notifier.toggleExpansion(path);
           } else {
-            // Open in editor
+            // Open in editor.
+            FileService.selectFile(path);
           }
 
           notifier.selectFile(path);
