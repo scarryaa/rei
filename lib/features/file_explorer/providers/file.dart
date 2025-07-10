@@ -128,6 +128,7 @@ class File extends _$File {
       if (child.path == path) {
         return child;
       }
+
       if (child.children.isNotEmpty && child.isDirectory) {
         final result = _findFileHelper(child, path);
         if (result != null) {
@@ -164,59 +165,58 @@ class File extends _$File {
   }
 
   void clearSelectedFile() {
-    state = state.copyWith(selectedFile: null);
+    state = state.copyWith(selectedFilePath: null);
   }
 
   void selectFile(String path) {
-    final file = _findFileByPath(path);
-
-    if (file != null) {
-      state = state.copyWith(selectedFile: file);
-    }
+    state = state.copyWith(selectedFilePath: path);
   }
 
   void moveToParentAndCollapse() {
-    final currentSelectedFile = state.selectedFile;
+    final currentSelectedFilePath = state.selectedFilePath;
 
-    if (currentSelectedFile != null) {
-      final parent = findParent(currentSelectedFile, state.root!);
+    if (currentSelectedFilePath != null) {
+      final currentSelectedFile = _findFileByPath(currentSelectedFilePath);
+      if (currentSelectedFile != null) {
+        final parent = findParent(currentSelectedFile, state.root!);
 
-      if (parent != null) {
-        toggleExpansion(parent.path);
-
-        final refreshedParent = findParent(currentSelectedFile, state.root!);
-        state = state.copyWith(selectedFile: refreshedParent);
+        if (parent != null) {
+          toggleExpansion(parent.path);
+        }
       }
     }
   }
 
   void collapseCurrentDirectoryOrMoveToAndCollapseParent() {
-    final currentSelectedFile = state.selectedFile;
+    final currentSelectedFilePath = state.selectedFilePath;
 
-    if (currentSelectedFile != null) {
-      // Collapse the current file if it is a directory and expanded.
-      if (currentSelectedFile.isDirectory && currentSelectedFile.isExpanded) {
-        toggleExpansion(currentSelectedFile.path);
+    if (currentSelectedFilePath != null) {
+      final currentSelectedFile = _findFileByPath(currentSelectedFilePath);
 
-        final refreshedFile = _findFileByPath(currentSelectedFile.path);
-        state = state.copyWith(selectedFile: refreshedFile);
-      } else {
-        // Otherwise, move to the parent and collapse.
-        moveToParentAndCollapse();
+      if (currentSelectedFile != null) {
+        // Collapse the current file if it is a directory and expanded.
+        if (currentSelectedFile.isDirectory && currentSelectedFile.isExpanded) {
+          toggleExpansion(currentSelectedFile.path);
+        } else {
+          // Otherwise, move to the parent and collapse.
+          moveToParentAndCollapse();
+        }
       }
     }
   }
 
   void moveToFirstChildAndExpand() {
-    final currentSelectedFile = state.selectedFile;
+    final currentSelectedFilePath = state.selectedFilePath;
 
-    if (currentSelectedFile != null) {
-      if (currentSelectedFile.isDirectory) {
+    if (currentSelectedFilePath != null) {
+      final currentSelectedFile = _findFileByPath(currentSelectedFilePath);
+
+      if (currentSelectedFile != null && currentSelectedFile.isDirectory) {
         if (currentSelectedFile.isExpanded) {
           // Move to first child if it exists.
           if (currentSelectedFile.children.isNotEmpty) {
             final firstChild = currentSelectedFile.children.first;
-            state = state.copyWith(selectedFile: firstChild);
+            state = state.copyWith(selectedFilePath: firstChild.path);
           } else {
             // Otherwise, move to the next file.
             selectNext();
@@ -224,30 +224,27 @@ class File extends _$File {
         } else {
           // Expand the directory.
           toggleExpansion(currentSelectedFile.path);
-
-          // Refresh the reference.
-          final refreshedSelectedFile = _findFileByPath(
-            currentSelectedFile.path,
-          );
-
-          if (refreshedSelectedFile != null) {
-            state = state.copyWith(selectedFile: refreshedSelectedFile);
-          }
         }
       }
     }
   }
 
   void selectNext() {
-    final currentSelectedFile = state.selectedFile;
+    final currentSelectedFilePath = state.selectedFilePath;
 
-    if (currentSelectedFile == null) {
-      state = state.copyWith(selectedFile: state.root);
+    if (currentSelectedFilePath == null) {
+      if (state.root != null) {
+        state = state.copyWith(selectedFilePath: state.root!.path);
+      }
     } else {
-      final nextFile = findNextInTree(currentSelectedFile);
+      final currentSelectedFile = _findFileByPath(currentSelectedFilePath);
 
-      if (nextFile != null) {
-        state = state.copyWith(selectedFile: nextFile);
+      if (currentSelectedFile != null) {
+        final nextFile = findNextInTree(currentSelectedFile);
+
+        if (nextFile != null) {
+          state = state.copyWith(selectedFilePath: nextFile.path);
+        }
       }
     }
   }
@@ -282,15 +279,21 @@ class File extends _$File {
   }
 
   void selectPrevious() {
-    final currentSelectedFile = state.selectedFile;
+    final currentSelectedFilePath = state.selectedFilePath;
 
-    if (currentSelectedFile == null) {
-      state = state.copyWith(selectedFile: state.root);
+    if (currentSelectedFilePath == null) {
+      if (state.root != null) {
+        state = state.copyWith(selectedFilePath: state.root!.path);
+      }
     } else {
-      final previousFile = findPreviousInTree(currentSelectedFile);
+      final currentSelectedFile = _findFileByPath(currentSelectedFilePath);
 
-      if (previousFile != null) {
-        state = state.copyWith(selectedFile: previousFile);
+      if (currentSelectedFile != null) {
+        final previousFile = findPreviousInTree(currentSelectedFile);
+
+        if (previousFile != null) {
+          state = state.copyWith(selectedFilePath: previousFile.path);
+        }
       }
     }
   }

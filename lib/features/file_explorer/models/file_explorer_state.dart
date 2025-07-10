@@ -7,6 +7,6 @@ part 'file_explorer_state.freezed.dart';
 sealed class FileExplorerState with _$FileExplorerState {
   const factory FileExplorerState({
     required FileEntry? root,
-    @Default(null) FileEntry? selectedFile,
+    @Default(null) String? selectedFilePath,
   }) = _FileExplorerState;
 }
