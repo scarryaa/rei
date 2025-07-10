@@ -54,10 +54,13 @@ class EditorWidget extends HookConsumerWidget {
   void _handleTapDown(
     TapDownDetails details,
     GlobalKey painterKey,
+    FocusNode focusNode,
     EditorState state,
     Editor notifier,
     FontMetrics metrics,
   ) {
+    focusNode.requestFocus();
+
     final newCursor = _offsetToCursorPosition(
       details.globalPosition,
       painterKey,
@@ -556,6 +559,7 @@ class EditorWidget extends HookConsumerWidget {
                       onTapDown: (details) => _handleTapDown(
                         details,
                         painterKey,
+                        focusNode,
                         state,
                         notifier,
                         fontMetrics,
