@@ -1,4 +1,7 @@
+import 'dart:math';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:rei/features/file_explorer/models/file_entry.dart';
@@ -7,10 +10,19 @@ import 'package:rei/features/file_explorer/providers/file.dart';
 class FileExplorerWidget extends HookConsumerWidget {
   const FileExplorerWidget({super.key});
 
+  static const textStyle = TextStyle(
+    fontSize: 15.0,
+    fontFamily: 'IBM Plex Sans',
+    letterSpacing: 0,
+    wordSpacing: 0,
+  );
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(fileProvider);
     final notifier = ref.read(fileProvider.notifier);
+    final verticalScrollController = useScrollController();
+    final horizontalScrollController = useScrollController();
 
     return Material(
       type: MaterialType.transparency,
@@ -21,7 +33,12 @@ class FileExplorerWidget extends HookConsumerWidget {
         ),
         child: state == null
             ? _buildEmptyView(notifier)
-            : _buildDirectoryView(notifier, state),
+            : _buildDirectoryView(
+                verticalScrollController,
+                horizontalScrollController,
+                notifier,
+                state,
+              ),
       ),
     );
   }
@@ -68,11 +85,87 @@ class FileExplorerWidget extends HookConsumerWidget {
     return widgets;
   }
 
-  Widget _buildDirectoryView(File notifier, FileEntry state) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: _buildFileTree(notifier, state, 0),
+  Widget _buildDirectoryView(
+    ScrollController verticalScrollController,
+    ScrollController horizontalScrollController,
+    File notifier,
+    FileEntry state,
+  ) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        Size size = _calculateMaxSize(
+          state,
+          constraints.maxWidth,
+          constraints.maxHeight,
+        );
+        double maxWidth = size.width;
+
+        maxWidth += maxWidth > constraints.maxWidth
+            ? FileEntryWidget.depthPadding
+            : 0.0;
+
+        return SizedBox(
+          width: constraints.maxWidth,
+          child: SingleChildScrollView(
+            controller: verticalScrollController,
+            child: SingleChildScrollView(
+              controller: horizontalScrollController,
+              scrollDirection: Axis.horizontal,
+              child: SizedBox(
+                width: maxWidth,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ..._buildFileTree(notifier, state, 0),
+                    SizedBox(
+                      width: maxWidth,
+                      height: size.height > constraints.maxHeight
+                          ? FileEntryWidget.depthPadding * 5
+                          : 0.0,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
+  }
+
+  Size _calculateMaxSize(FileEntry entry, double minWidth, double minHeight) {
+    double maxWidth = minWidth;
+    int totalFiles = 0;
+    final textPainter = TextPainter(textDirection: TextDirection.ltr);
+
+    void calculateDimensions(FileEntry entry, int depth) {
+      textPainter
+        ..text = TextSpan(text: entry.name, style: textStyle)
+        ..layout();
+
+      double width =
+          FileEntryWidget.leftPadding +
+          (depth * FileEntryWidget.depthPadding) +
+          FileEntryWidget.iconSize +
+          FileEntryWidget.spacing +
+          textPainter.width;
+      maxWidth = max(maxWidth, width);
+
+      totalFiles++;
+
+      if (entry.isDirectory && entry.isExpanded) {
+        for (FileEntry child in entry.children) {
+          calculateDimensions(child, depth + 1);
+        }
+      }
+    }
+
+    calculateDimensions(entry, 0);
+
+    double lineHeight = textPainter.height;
+    double maxHeight = max(minHeight, lineHeight * totalFiles);
+
+    return Size(maxWidth, maxHeight);
   }
 }
 
@@ -87,6 +180,11 @@ class FileEntryWidget extends HookConsumerWidget {
     required this.notifier,
     this.depth = 0,
   });
+
+  static const double depthPadding = 16.0;
+  static const double spacing = 8.0;
+  static const double leftPadding = 8.0;
+  static const double iconSize = 15.0;
 
   final String name;
   final String path;
@@ -111,21 +209,19 @@ class FileEntryWidget extends HookConsumerWidget {
           color: isHovered.value
               ? Colors.lightBlue.withValues(alpha: 0.3)
               : null,
-          padding: EdgeInsets.only(left: 8.0 + (depth * 16.0)),
+          padding: EdgeInsets.only(left: leftPadding + (depth * depthPadding)),
           child: Row(
-            spacing: 8.0,
+            spacing: spacing,
             children: [
               Icon(
                 isDirectory ? Icons.folder : Icons.insert_drive_file_rounded,
-                size: 15.0,
+                size: iconSize,
                 color: isHidden ? Color(0x70FFFFFF) : Color(0xBBFFFFFF),
               ),
               Text(
                 name,
-                style: TextStyle(
+                style: FileExplorerWidget.textStyle.copyWith(
                   color: isHidden ? Color(0x65FFFFFF) : Color(0xAAFFFFFF),
-                  fontSize: 15.0,
-                  fontFamily: 'IBM Plex Sans',
                 ),
               ),
             ],
