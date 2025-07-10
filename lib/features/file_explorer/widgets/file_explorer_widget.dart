@@ -19,6 +19,15 @@ class FileExplorerWidget extends HookConsumerWidget {
     height: 1.4,
   );
 
+  void _handleTapDown(
+    TapDownDetails details,
+    FocusNode focusNode,
+    File notifier,
+  ) {
+    focusNode.requestFocus();
+    notifier.clearSelectedFile();
+  }
+
   KeyEventResult _handleKeyEvent(
     FocusNode node,
     KeyEvent event,
@@ -144,7 +153,6 @@ class FileExplorerWidget extends HookConsumerWidget {
 
         return SizedBox(
           width: constraints.maxWidth,
-          height: constraints.maxHeight,
           child: Scrollbar(
             controller: verticalScrollController,
             child: Scrollbar(
@@ -162,24 +170,29 @@ class FileExplorerWidget extends HookConsumerWidget {
                     controller: horizontalScrollController,
                     scrollDirection: Axis.horizontal,
                     child: GestureDetector(
-                      onTapDown: (details) => focusNode.requestFocus(),
-                      child: Focus(
-                        focusNode: focusNode,
-                        onKeyEvent: (node, event) =>
-                            _handleKeyEvent(node, event, notifier),
-                        child: SizedBox(
-                          width: maxWidth,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              ..._buildFileTree(notifier, state, root, 0),
-                              SizedBox(
-                                width: maxWidth,
-                                height: size.height > constraints.maxHeight
-                                    ? FileEntryWidget.depthPadding * 5
-                                    : 0.0,
-                              ),
-                            ],
+                      onTapDown: (details) =>
+                          _handleTapDown(details, focusNode, notifier),
+                      child: Container(
+                        color: Colors.transparent,
+                        height: constraints.maxHeight,
+                        child: Focus(
+                          focusNode: focusNode,
+                          onKeyEvent: (node, event) =>
+                              _handleKeyEvent(node, event, notifier),
+                          child: SizedBox(
+                            width: maxWidth,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                ..._buildFileTree(notifier, state, root, 0),
+                                SizedBox(
+                                  width: maxWidth,
+                                  height: size.height > constraints.maxHeight
+                                      ? FileEntryWidget.depthPadding * 5
+                                      : 0.0,
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -266,7 +279,13 @@ class FileEntryWidget extends HookConsumerWidget {
       onExit: (event) => isHovered.value = false,
       child: GestureDetector(
         onTapDown: (details) {
-          notifier.toggleExpansion(path);
+          if (isDirectory) {
+            notifier.toggleExpansion(path);
+          } else {
+            // Open in editor
+          }
+
+          notifier.selectFile(path);
         },
         child: Container(
           color: (colorOverride != null)

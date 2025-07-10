@@ -163,6 +163,18 @@ class File extends _$File {
     }
   }
 
+  void clearSelectedFile() {
+    state = state.copyWith(selectedFile: null);
+  }
+
+  void selectFile(String path) {
+    final file = _findFileByPath(path);
+
+    if (file != null) {
+      state = state.copyWith(selectedFile: file);
+    }
+  }
+
   void moveToParentAndCollapse() {
     final currentSelectedFile = state.selectedFile;
 
