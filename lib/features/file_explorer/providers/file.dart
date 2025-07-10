@@ -205,4 +205,65 @@ class File extends _$File {
     // End of tree.
     return null;
   }
+
+  void selectPrevious() {
+    final currentSelectedFile = state.selectedFile;
+
+    if (currentSelectedFile == null) {
+      state = state.copyWith(selectedFile: state.root);
+    } else {
+      final previousFile = findPreviousInTree(currentSelectedFile);
+
+      if (previousFile != null) {
+        state = state.copyWith(selectedFile: previousFile);
+      }
+    }
+  }
+
+  FileEntry? findPreviousInTree(FileEntry currentFile) {
+    final parent = findParent(currentFile, state.root!);
+
+    if (parent != null) {
+      final currentIndex = parent.children.indexOf(currentFile);
+
+      if (currentIndex != -1 && currentIndex > 0) {
+        // Get the previous sibling.
+        final previousSibling = parent.children[currentIndex - 1];
+
+        // If it's a directory and expanded, find its last descendant.
+        if (previousSibling.isDirectory && previousSibling.isExpanded) {
+          return findLastDescendant(previousSibling);
+        } else {
+          // Otherwise, just return the previous sibling.
+          return previousSibling;
+        }
+      } else {
+        // No previous sibling, return the parent.
+        return parent;
+      }
+    }
+
+    // Start of tree.
+    return null;
+  }
+
+  FileEntry findLastDescendant(FileEntry entry) {
+    // If not expanded or no children, return the entry itself.
+    if (!entry.isExpanded || entry.children.isEmpty) {
+      return entry;
+    }
+
+    // Get the last child.
+    final lastChild = entry.children.last;
+
+    // If the last child is a directory and expanded, recurse.
+    if (lastChild.isDirectory &&
+        lastChild.isExpanded &&
+        lastChild.children.isNotEmpty) {
+      return findLastDescendant(lastChild);
+    }
+
+    // Otherwise return the last child.
+    return lastChild;
+  }
 }

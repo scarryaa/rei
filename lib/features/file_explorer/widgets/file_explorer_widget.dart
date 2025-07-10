@@ -31,6 +31,8 @@ class FileExplorerWidget extends HookConsumerWidget {
     switch (event.logicalKey) {
       case LogicalKeyboardKey.arrowDown:
         notifier.selectNext();
+      case LogicalKeyboardKey.arrowUp:
+        notifier.selectPrevious();
     }
 
     return KeyEventResult.handled;
