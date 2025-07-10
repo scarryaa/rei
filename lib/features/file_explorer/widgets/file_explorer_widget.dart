@@ -1,7 +1,6 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:rei/features/file_explorer/models/file_entry.dart';
@@ -106,24 +105,39 @@ class FileExplorerWidget extends HookConsumerWidget {
 
         return SizedBox(
           width: constraints.maxWidth,
-          child: SingleChildScrollView(
+          height: constraints.maxHeight,
+          child: Scrollbar(
             controller: verticalScrollController,
-            child: SingleChildScrollView(
+            child: Scrollbar(
               controller: horizontalScrollController,
-              scrollDirection: Axis.horizontal,
-              child: SizedBox(
-                width: maxWidth,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ..._buildFileTree(notifier, state, 0),
-                    SizedBox(
+              notificationPredicate: (notification) => notification.depth == 1,
+              child: ScrollConfiguration(
+                behavior: ScrollBehavior().copyWith(
+                  scrollbars: false,
+                  overscroll: false,
+                  physics: ClampingScrollPhysics(),
+                ),
+                child: SingleChildScrollView(
+                  controller: verticalScrollController,
+                  child: SingleChildScrollView(
+                    controller: horizontalScrollController,
+                    scrollDirection: Axis.horizontal,
+                    child: SizedBox(
                       width: maxWidth,
-                      height: size.height > constraints.maxHeight
-                          ? FileEntryWidget.depthPadding * 5
-                          : 0.0,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          ..._buildFileTree(notifier, state, 0),
+                          SizedBox(
+                            width: maxWidth,
+                            height: size.height > constraints.maxHeight
+                                ? FileEntryWidget.depthPadding * 5
+                                : 0.0,
+                          ),
+                        ],
+                      ),
                     ),
-                  ],
+                  ),
                 ),
               ),
             ),
