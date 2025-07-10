@@ -5,6 +5,8 @@ part 'tab.g.dart';
 
 @riverpod
 class Tab extends _$Tab {
+  static String defaultTabPrefix = 'rei_tmp';
+
   @override
   List<TabState> build() {
     return [];
@@ -14,7 +16,12 @@ class Tab extends _$Tab {
     final List<TabState> newTabs = state
         .map((tab) => tab.copyWith(isActive: false))
         .toList();
-    newTabs.add(TabState(path: path, name: name, isActive: true));
+
+    final String adjustedPath = path.isEmpty
+        ? defaultTabPrefix + DateTime.now().toString()
+        : path;
+
+    newTabs.add(TabState(path: adjustedPath, name: name, isActive: true));
 
     state = newTabs;
   }
