@@ -14,6 +14,7 @@ class FileExplorerWidget extends HookConsumerWidget {
     fontFamily: 'IBM Plex Sans',
     letterSpacing: 0,
     wordSpacing: 0,
+    height: 1.4,
   );
 
   @override
