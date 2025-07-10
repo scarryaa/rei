@@ -177,11 +177,13 @@ class File extends _$File {
 
     if (currentSelectedFilePath != null) {
       final currentSelectedFile = _findFileByPath(currentSelectedFilePath);
+
       if (currentSelectedFile != null) {
         final parent = findParent(currentSelectedFile, state.root!);
 
         if (parent != null) {
           toggleExpansion(parent.path);
+          selectFile(parent.path);
         }
       }
     }

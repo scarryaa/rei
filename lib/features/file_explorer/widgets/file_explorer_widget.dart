@@ -169,28 +169,37 @@ class FileExplorerWidget extends HookConsumerWidget {
                   child: SingleChildScrollView(
                     controller: horizontalScrollController,
                     scrollDirection: Axis.horizontal,
-                    child: Focus(
-                      focusNode: focusNode,
-                      onKeyEvent: (node, event) =>
-                          _handleKeyEvent(node, event, notifier),
-                      child: SizedBox(
-                        width: maxWidth,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ..._buildFileTree(notifier, state, root, 0),
-                            GestureDetector(
-                              onTapDown: (details) =>
-                                  _handleTapDown(details, focusNode, notifier),
-                              child: Container(
-                                color: Colors.transparent,
-                                width: maxWidth,
-                                height: size.height > constraints.maxHeight
-                                    ? FileEntryWidget.depthPadding * 5
-                                    : constraints.maxHeight - size.height,
+                    child: GestureDetector(
+                      onTapDown: (details) {
+                        focusNode.requestFocus();
+                      },
+                      child: Focus(
+                        focusNode: focusNode,
+                        onKeyEvent: (node, event) =>
+                            _handleKeyEvent(node, event, notifier),
+                        child: SizedBox(
+                          width: maxWidth,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ..._buildFileTree(notifier, state, root, 0),
+                              GestureDetector(
+                                behavior: HitTestBehavior.translucent,
+                                onTapDown: (details) => _handleTapDown(
+                                  details,
+                                  focusNode,
+                                  notifier,
+                                ),
+                                child: Container(
+                                  color: Colors.transparent,
+                                  width: maxWidth,
+                                  height: size.height > constraints.maxHeight
+                                      ? FileEntryWidget.depthPadding * 5
+                                      : constraints.maxHeight - size.height,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                       ),
                     ),
