@@ -8,7 +8,6 @@ sealed class FileEntry with _$FileEntry {
     required String path,
     required String name,
     required bool isDirectory,
-    required FileEntry? parent,
     @Default(false) bool isHidden,
     @Default(false) bool isExpanded,
     @Default([]) List<FileEntry> children,

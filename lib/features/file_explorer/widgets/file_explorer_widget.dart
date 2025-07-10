@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:rei/features/file_explorer/models/file_entry.dart';
+import 'package:rei/features/file_explorer/models/file_explorer_state.dart';
 import 'package:rei/features/file_explorer/providers/file.dart';
 
 class FileExplorerWidget extends HookConsumerWidget {
@@ -57,6 +58,7 @@ class FileExplorerWidget extends HookConsumerWidget {
                 horizontalScrollController,
                 focusNode,
                 notifier,
+                state,
                 state.root!,
               ),
       ),
@@ -81,7 +83,12 @@ class FileExplorerWidget extends HookConsumerWidget {
     );
   }
 
-  List<Widget> _buildFileTree(File notifier, FileEntry entry, int depth) {
+  List<Widget> _buildFileTree(
+    File notifier,
+    FileExplorerState state,
+    FileEntry entry,
+    int depth,
+  ) {
     List<Widget> widgets = [];
 
     widgets.add(
@@ -93,12 +100,15 @@ class FileExplorerWidget extends HookConsumerWidget {
         isHidden: entry.isHidden,
         notifier: notifier,
         depth: depth,
+        colorOverride: state.selectedFile == entry
+            ? Colors.lightBlue.withValues(alpha: 0.5)
+            : null,
       ),
     );
 
     if (entry.isDirectory && entry.isExpanded) {
       for (FileEntry child in entry.children) {
-        widgets.addAll(_buildFileTree(notifier, child, depth + 1));
+        widgets.addAll(_buildFileTree(notifier, state, child, depth + 1));
       }
     }
 
@@ -110,12 +120,13 @@ class FileExplorerWidget extends HookConsumerWidget {
     ScrollController horizontalScrollController,
     FocusNode focusNode,
     File notifier,
-    FileEntry state,
+    FileExplorerState state,
+    FileEntry root,
   ) {
     return LayoutBuilder(
       builder: (context, constraints) {
         Size size = _calculateMaxSize(
-          state,
+          root,
           constraints.maxWidth,
           constraints.maxHeight,
         );
@@ -144,23 +155,26 @@ class FileExplorerWidget extends HookConsumerWidget {
                   child: SingleChildScrollView(
                     controller: horizontalScrollController,
                     scrollDirection: Axis.horizontal,
-                    child: Focus(
-                      focusNode: focusNode,
-                      onKeyEvent: (node, event) =>
-                          _handleKeyEvent(node, event, notifier),
-                      child: SizedBox(
-                        width: maxWidth,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ..._buildFileTree(notifier, state, 0),
-                            SizedBox(
-                              width: maxWidth,
-                              height: size.height > constraints.maxHeight
-                                  ? FileEntryWidget.depthPadding * 5
-                                  : 0.0,
-                            ),
-                          ],
+                    child: GestureDetector(
+                      onTapDown: (details) => focusNode.requestFocus(),
+                      child: Focus(
+                        focusNode: focusNode,
+                        onKeyEvent: (node, event) =>
+                            _handleKeyEvent(node, event, notifier),
+                        child: SizedBox(
+                          width: maxWidth,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              ..._buildFileTree(notifier, state, root, 0),
+                              SizedBox(
+                                width: maxWidth,
+                                height: size.height > constraints.maxHeight
+                                    ? FileEntryWidget.depthPadding * 5
+                                    : 0.0,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
@@ -219,6 +233,7 @@ class FileEntryWidget extends HookConsumerWidget {
     required this.isDirectory,
     required this.isHidden,
     required this.notifier,
+    this.colorOverride,
     this.depth = 0,
   });
 
@@ -234,6 +249,7 @@ class FileEntryWidget extends HookConsumerWidget {
   final bool isHidden;
   final File notifier;
   final int depth;
+  final Color? colorOverride;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -247,7 +263,9 @@ class FileEntryWidget extends HookConsumerWidget {
           notifier.toggleExpansion(path);
         },
         child: Container(
-          color: isHovered.value
+          color: (colorOverride != null)
+              ? colorOverride
+              : isHovered.value
               ? Colors.lightBlue.withValues(alpha: 0.3)
               : null,
           padding: EdgeInsets.only(left: leftPadding + (depth * depthPadding)),

@@ -24,6 +24,21 @@ class File extends _$File {
     state = state.copyWith(root: _toggleExpansionHelper(state.root!, path));
   }
 
+  FileEntry? findParent(FileEntry target, FileEntry root) {
+    if (root.children.contains(target)) {
+      return root;
+    }
+
+    for (final child in root.children) {
+      if (child.isDirectory) {
+        final parent = findParent(target, child);
+        if (parent != null) return parent;
+      }
+    }
+
+    return null;
+  }
+
   FileEntry _toggleExpansionHelper(FileEntry entry, String targetPath) {
     if (entry.path == targetPath) {
       if (entry.isDirectory) {
@@ -86,7 +101,6 @@ class File extends _$File {
 
         return FileEntry(
           path: item.path,
-          parent: parent,
           name: name,
           isDirectory: item is IO.Directory,
           isHidden: name.startsWith('.') || (parent != null && parent.isHidden),
@@ -136,7 +150,6 @@ class File extends _$File {
       FileEntry root = FileEntry(
         path: rootDir,
         name: name,
-        parent: null,
         isHidden: name.startsWith('.'),
         isDirectory: true,
         isExpanded: true,
@@ -150,5 +163,46 @@ class File extends _$File {
     }
   }
 
-  void selectNext() {}
+  void selectNext() {
+    final currentSelectedFile = state.selectedFile;
+
+    if (currentSelectedFile == null) {
+      state = state.copyWith(selectedFile: state.root);
+    } else {
+      final nextFile = findNextInTree(currentSelectedFile);
+
+      if (nextFile != null) {
+        state = state.copyWith(selectedFile: nextFile);
+      }
+    }
+  }
+
+  FileEntry? findNextInTree(FileEntry currentFile) {
+    // If the current file has children, is a directory, and is expanded,
+    // go to first child.
+    if (currentFile.children.isNotEmpty &&
+        currentFile.isDirectory &&
+        currentFile.isExpanded) {
+      return currentFile.children.first;
+    }
+
+    // Otherwise, find the next sibling or the ancestor's sibling.
+    FileEntry? node = currentFile;
+    while (node != null) {
+      final parent = findParent(node, state.root!);
+
+      if (parent != null) {
+        final currentIndex = parent.children.indexOf(node);
+
+        if (currentIndex + 1 < parent.children.length) {
+          return parent.children[currentIndex + 1];
+        }
+      }
+
+      node = parent;
+    }
+
+    // End of tree.
+    return null;
+  }
 }
