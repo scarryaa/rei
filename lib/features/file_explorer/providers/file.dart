@@ -163,6 +163,69 @@ class File extends _$File {
     }
   }
 
+  void moveToParentAndCollapse() {
+    final currentSelectedFile = state.selectedFile;
+
+    if (currentSelectedFile != null) {
+      final parent = findParent(currentSelectedFile, state.root!);
+
+      if (parent != null) {
+        toggleExpansion(parent.path);
+
+        final refreshedParent = findParent(currentSelectedFile, state.root!);
+        state = state.copyWith(selectedFile: refreshedParent);
+      }
+    }
+  }
+
+  void collapseCurrentDirectoryOrMoveToAndCollapseParent() {
+    final currentSelectedFile = state.selectedFile;
+
+    if (currentSelectedFile != null) {
+      // Collapse the current file if it is a directory and expanded.
+      if (currentSelectedFile.isDirectory && currentSelectedFile.isExpanded) {
+        toggleExpansion(currentSelectedFile.path);
+
+        final refreshedFile = _findFileByPath(currentSelectedFile.path);
+        state = state.copyWith(selectedFile: refreshedFile);
+      } else {
+        // Otherwise, move to the parent and collapse.
+        moveToParentAndCollapse();
+      }
+    }
+  }
+
+  void moveToFirstChildAndExpand() {
+    final currentSelectedFile = state.selectedFile;
+
+    if (currentSelectedFile != null) {
+      if (currentSelectedFile.isDirectory) {
+        if (currentSelectedFile.isExpanded) {
+          // Move to first child if it exists.
+          if (currentSelectedFile.children.isNotEmpty) {
+            final firstChild = currentSelectedFile.children.first;
+            state = state.copyWith(selectedFile: firstChild);
+          } else {
+            // Otherwise, move to the next file.
+            selectNext();
+          }
+        } else {
+          // Expand the directory.
+          toggleExpansion(currentSelectedFile.path);
+
+          // Refresh the reference.
+          final refreshedSelectedFile = _findFileByPath(
+            currentSelectedFile.path,
+          );
+
+          if (refreshedSelectedFile != null) {
+            state = state.copyWith(selectedFile: refreshedSelectedFile);
+          }
+        }
+      }
+    }
+  }
+
   void selectNext() {
     final currentSelectedFile = state.selectedFile;
 

@@ -33,6 +33,10 @@ class FileExplorerWidget extends HookConsumerWidget {
         notifier.selectNext();
       case LogicalKeyboardKey.arrowUp:
         notifier.selectPrevious();
+      case LogicalKeyboardKey.arrowLeft:
+        notifier.collapseCurrentDirectoryOrMoveToAndCollapseParent();
+      case LogicalKeyboardKey.arrowRight:
+        notifier.moveToFirstChildAndExpand();
     }
 
     return KeyEventResult.handled;
