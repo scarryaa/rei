@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:rei/features/editor/models/font_metrics.dart';
+import 'package:rei/features/editor/tabs/providers/tab.dart';
 import 'package:rei/features/editor/tabs/widgets/tab_bar_widget.dart';
 import 'package:rei/features/editor/widgets/editor_widget.dart';
 import 'package:rei/features/file_explorer/widgets/file_explorer_widget.dart';
@@ -12,6 +13,9 @@ class EditorScreen extends HookConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final tabs = ref.watch(tabProvider);
+    final tabNotifier = ref.read(tabProvider.notifier);
+
     final textStyle = useMemoized(
       () => TextStyle(
         fontSize: 15.0,
@@ -37,28 +41,44 @@ class EditorScreen extends HookConsumerWidget {
       children: [
         FileExplorerWidget(),
         Expanded(
-          child: Column(
-            children: [
-              TabBarWidget(),
-              Expanded(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          child: tabs.isNotEmpty
+              ? Column(
                   children: [
-                    GutterWidget(
-                      textStyle: textStyle,
-                      fontMetrics: fontMetrics,
-                    ),
+                    TabBarWidget(),
                     Expanded(
-                      child: EditorWidget(
-                        textStyle: textStyle,
-                        fontMetrics: fontMetrics,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          GutterWidget(
+                            textStyle: textStyle,
+                            fontMetrics: fontMetrics,
+                          ),
+                          Expanded(
+                            child: EditorWidget(
+                              textStyle: textStyle,
+                              fontMetrics: fontMetrics,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                )
+              : Column(
+                  mainAxisSize: MainAxisSize.max,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  spacing: 8.0,
+                  children: [
+                    Icon(Icons.tab, size: 64.0, color: Color(0x50FFFFFF)),
+                    TextButton(
+                      onPressed: () => tabNotifier.addTab('Untitled', ''),
+                      child: Text(
+                        'Open a new tab',
+                        style: textStyle.copyWith(fontFamily: 'IBM Plex Sans'),
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
         ),
       ],
     );
