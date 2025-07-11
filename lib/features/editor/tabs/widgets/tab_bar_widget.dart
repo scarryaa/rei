@@ -1,4 +1,8 @@
+import 'dart:math';
+
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:rei/features/editor/tabs/providers/tab.dart';
 import 'package:rei/features/editor/tabs/widgets/tab_widget.dart';
@@ -10,6 +14,7 @@ class TabBarWidget extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tabs = ref.watch(tabProvider);
+    final horizontalScrollController = useScrollController();
 
     return Material(
       type: MaterialType.transparency,
@@ -23,8 +28,29 @@ class TabBarWidget extends HookConsumerWidget {
         child: Row(
           children: [
             Expanded(
-              child: Row(
-                children: tabs.map((tab) => TabWidget(state: tab)).toList(),
+              child: Listener(
+                onPointerSignal: (event) {
+                  if (event is PointerScrollEvent) {
+                    if (event.scrollDelta.dy != 0) {
+                      final double offset = min(
+                        horizontalScrollController.position.maxScrollExtent,
+                        max(
+                          0,
+                          horizontalScrollController.offset +
+                              event.scrollDelta.dy,
+                        ),
+                      );
+                      horizontalScrollController.jumpTo(offset);
+                    }
+                  }
+                },
+                child: SingleChildScrollView(
+                  controller: horizontalScrollController,
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: tabs.map((tab) => TabWidget(state: tab)).toList(),
+                  ),
+                ),
               ),
             ),
             NewTabButton(),
