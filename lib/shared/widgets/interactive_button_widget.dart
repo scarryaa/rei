@@ -36,6 +36,7 @@ class InteractiveButtonWidget extends HookConsumerWidget {
           onHoverExit?.call();
         },
         child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
           onTapDown: (details) {
             isPressed.value = true;
             onTapDown?.call();

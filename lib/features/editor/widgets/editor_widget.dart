@@ -266,6 +266,7 @@ class EditorWidget extends HookConsumerWidget {
     useEffect(() {
       fileSubscription = FileService.fileSelectedStream.listen((filePath) {
         final fileContents = FileService.readFile(filePath);
+
         notifier.openFile(fileContents);
       });
 

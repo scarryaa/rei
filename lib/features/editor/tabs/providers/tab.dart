@@ -26,11 +26,56 @@ class Tab extends _$Tab {
     state = newTabs;
   }
 
-  void markActive(String path) {
-    final List<TabState> newTabs = state
-        .map((tab) => tab.copyWith(isActive: path == tab.path))
+  void removeTab(String path) {
+    final currentIndex = state.indexWhere((tab) => tab.path == path);
+    final wasActiveTab = state.any((tab) => tab.path == path && tab.isActive);
+
+    if (currentIndex == -1) return;
+
+    final List<TabState> updatedTabs = state
+        .where((tab) => tab.path != path)
         .toList();
 
-    state = newTabs;
+    if (updatedTabs.isNotEmpty) {
+      String newActiveTabPath;
+
+      if (wasActiveTab) {
+        if (currentIndex < updatedTabs.length) {
+          newActiveTabPath = updatedTabs[currentIndex].path;
+        } else if (currentIndex > 0) {
+          newActiveTabPath = updatedTabs[currentIndex - 1].path;
+        } else {
+          newActiveTabPath = updatedTabs[0].path;
+        }
+      } else {
+        final activeTab = updatedTabs.firstWhere(
+          (tab) => state.any(
+            (original) => original.path == tab.path && original.isActive,
+          ),
+          orElse: () => updatedTabs[0],
+        );
+        newActiveTabPath = activeTab.path;
+      }
+
+      final List<TabState> newTabs = updatedTabs
+          .map((tab) => tab.copyWith(isActive: tab.path == newActiveTabPath))
+          .toList();
+
+      state = newTabs;
+    } else {
+      state = [];
+    }
+  }
+
+  void markActive(String path) {
+    final tabIndex = state.indexWhere((tab) => tab.path == path);
+
+    if (tabIndex != -1) {
+      final List<TabState> newTabs = state
+          .map((tab) => tab.copyWith(isActive: path == tab.path))
+          .toList();
+
+      state = newTabs;
+    }
   }
 }

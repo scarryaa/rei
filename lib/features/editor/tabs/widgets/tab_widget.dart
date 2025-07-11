@@ -49,7 +49,10 @@ class TabWidget extends HookConsumerWidget {
                   color: Colors.white,
                 ),
               ),
-              _buildCloseButton(isHovered.value),
+              _buildCloseButton(
+                isHovered.value,
+                () => notifier.removeTab(state.path),
+              ),
             ],
           ),
         ),
@@ -68,8 +71,9 @@ class TabWidget extends HookConsumerWidget {
     );
   }
 
-  Widget _buildCloseButton(bool isTabHovered) {
+  Widget _buildCloseButton(bool isTabHovered, void Function() onClose) {
     return InteractiveButtonWidget(
+      onTapDown: () => onClose(),
       child: Icon(
         Icons.close_rounded,
         size: 13.0,
