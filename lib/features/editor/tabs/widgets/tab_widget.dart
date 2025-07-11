@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -19,41 +20,48 @@ class TabWidget extends HookConsumerWidget {
     final isHovered = useState(false);
     final notifier = ref.read(tabProvider.notifier);
 
-    return GestureDetector(
-      onTapDown: (details) => notifier.markActive(state.path),
-      child: MouseRegion(
-        onEnter: (event) => isHovered.value = true,
-        onExit: (event) => isHovered.value = false,
-        child: Container(
-          padding: EdgeInsetsDirectional.symmetric(horizontal: outerPading),
-          decoration: BoxDecoration(
-            color: state.isActive
-                ? Color(0x10FFFFFF)
-                : isHovered.value
-                ? Color(0x07FFFFFF)
-                : Colors.transparent,
-            border: Border(
-              right: BorderSide(color: Color(0x10FFFFFF), width: 1.0),
+    return Listener(
+      onPointerDown: (event) {
+        if (event.buttons == kMiddleMouseButton) {
+          notifier.removeTab(state.path);
+        }
+      },
+      child: GestureDetector(
+        onTapDown: (details) => notifier.markActive(state.path),
+        child: MouseRegion(
+          onEnter: (event) => isHovered.value = true,
+          onExit: (event) => isHovered.value = false,
+          child: Container(
+            padding: EdgeInsetsDirectional.symmetric(horizontal: outerPading),
+            decoration: BoxDecoration(
+              color: state.isActive
+                  ? Color(0x10FFFFFF)
+                  : isHovered.value
+                  ? Color(0x07FFFFFF)
+                  : Colors.transparent,
+              border: Border(
+                right: BorderSide(color: Color(0x10FFFFFF), width: 1.0),
+              ),
             ),
-          ),
-          height: maxHeight,
-          child: Row(
-            spacing: spacing,
-            children: [
-              _buildDirtyIndicator(),
-              Text(
-                state.name,
-                style: TextStyle(
-                  fontSize: 15.0,
-                  fontFamily: 'IBM Plex Sans',
-                  color: Colors.white,
+            height: maxHeight,
+            child: Row(
+              spacing: spacing,
+              children: [
+                _buildDirtyIndicator(),
+                Text(
+                  state.name,
+                  style: TextStyle(
+                    fontSize: 15.0,
+                    fontFamily: 'IBM Plex Sans',
+                    color: Colors.white,
+                  ),
                 ),
-              ),
-              _buildCloseButton(
-                isHovered.value,
-                () => notifier.removeTab(state.path),
-              ),
-            ],
+                _buildCloseButton(
+                  isHovered.value,
+                  () => notifier.removeTab(state.path),
+                ),
+              ],
+            ),
           ),
         ),
       ),
