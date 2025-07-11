@@ -4,19 +4,39 @@ import 'package:rei/bridge/rust/api/buffer.dart';
 import 'package:rei/bridge/rust/api/cursor.dart';
 import 'package:rei/bridge/rust/api/selection.dart';
 import 'package:rei/features/editor/models/state.dart';
+import 'package:rei/features/editor/tabs/providers/tab.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'editor.g.dart';
 
-@riverpod
+final activeEditorProvider = Provider<EditorState>((ref) {
+  final activeTab = ref.watch(activeTabProvider);
+
+  if (activeTab == null) {
+    return EditorState(
+      buffer: Buffer(),
+      selection: Selection.default_(),
+      cursor: Cursor.default_(),
+    );
+  }
+
+  return ref.watch(editorProvider(activeTab.path));
+});
+
+@Riverpod(keepAlive: true)
 class Editor extends _$Editor {
   @override
-  EditorState build() {
+  EditorState build(String path) {
     return EditorState(
       buffer: Buffer(),
       cursor: Cursor.default_(),
       selection: Selection.default_(),
     );
+  }
+
+  void _syncToTab() {
+    final tabNotifier = ref.read(tabProvider.notifier);
+    tabNotifier.updateTabState(path: path, editorState: state);
   }
 
   void openFile(String content) {
@@ -25,6 +45,7 @@ class Editor extends _$Editor {
       cursor: Cursor.default_(),
       selection: Selection.default_(),
     );
+    _syncToTab();
   }
 
   void insert(String text) {
@@ -45,6 +66,7 @@ class Editor extends _$Editor {
     );
 
     state = state.copyWith(buffer: state.buffer, cursor: newCursor);
+    _syncToTab();
   }
 
   void removeChar() {
@@ -68,11 +90,13 @@ class Editor extends _$Editor {
     );
 
     state = state.copyWith(buffer: state.buffer, cursor: newCursor);
+    _syncToTab();
   }
 
   // TODO: For movement methods, consider chars instead of +1 and -1.
   void moveTo(Cursor cursor) {
     state = state.copyWith(cursor: cursor);
+    _syncToTab();
   }
 
   void moveLeft(bool extendSelection) {
@@ -81,6 +105,7 @@ class Editor extends _$Editor {
 
     if (cursor.row == 0 && cursor.column == 0) {
       updateSelection(newCursor, extendSelection);
+      _syncToTab();
       return;
     }
 
@@ -104,6 +129,7 @@ class Editor extends _$Editor {
     startSelection(cursor, extendSelection);
     state = state.copyWith(cursor: newCursor);
     updateSelection(newCursor, extendSelection);
+    _syncToTab();
   }
 
   void moveRight(bool extendSelection) {
@@ -114,6 +140,7 @@ class Editor extends _$Editor {
 
     if (cursor.row == lineCount && cursor.column == lastLineLength) {
       updateSelection(newCursor, extendSelection);
+      _syncToTab();
       return;
     }
 
@@ -133,6 +160,7 @@ class Editor extends _$Editor {
     startSelection(cursor, extendSelection);
     state = state.copyWith(cursor: newCursor);
     updateSelection(newCursor, extendSelection);
+    _syncToTab();
   }
 
   void moveUp(bool extendSelection) {
@@ -156,6 +184,7 @@ class Editor extends _$Editor {
     startSelection(cursor, extendSelection);
     state = state.copyWith(cursor: newCursor);
     updateSelection(newCursor, extendSelection);
+    _syncToTab();
   }
 
   void moveDown(bool extendSelection) {
@@ -185,6 +214,7 @@ class Editor extends _$Editor {
     startSelection(cursor, extendSelection);
     state = state.copyWith(cursor: newCursor);
     updateSelection(newCursor, extendSelection);
+    _syncToTab();
   }
 
   void startSelection(Cursor cursor, bool extendSelection) {
@@ -193,6 +223,7 @@ class Editor extends _$Editor {
       state = state.copyWith(
         selection: Selection(start: cursor, end: cursor),
       );
+      _syncToTab();
     }
   }
 
@@ -203,6 +234,7 @@ class Editor extends _$Editor {
     if (extendSelection) {
       newSelection = Selection(start: newSelection.start, end: cursor);
       state = state.copyWith(selection: newSelection);
+      _syncToTab();
     } else {
       clearSelection();
     }
@@ -210,6 +242,7 @@ class Editor extends _$Editor {
 
   void clearSelection() {
     state = state.copyWith(selection: Selection.default_());
+    _syncToTab();
   }
 
   void removeRange(int startRow, int startColumn, int endRow, int endColumn) {
@@ -226,6 +259,7 @@ class Editor extends _$Editor {
     );
 
     state = state.copyWith(buffer: state.buffer, cursor: newCursor);
+    _syncToTab();
   }
 
   void deleteSelection() {
@@ -238,6 +272,7 @@ class Editor extends _$Editor {
       normalized.end.column,
     );
     clearSelection();
+    _syncToTab();
   }
 
   void selectLine(int row) {
@@ -253,6 +288,7 @@ class Editor extends _$Editor {
     final newSelection = Selection(start: startCursor, end: endCursor);
 
     state = state.copyWith(selection: newSelection);
+    _syncToTab();
   }
 
   void selectAll() {
@@ -266,6 +302,7 @@ class Editor extends _$Editor {
     final newSelection = Selection(start: Cursor.default_(), end: endCursor);
 
     state = state.copyWith(selection: newSelection, cursor: endCursor);
+    _syncToTab();
   }
 
   String getTextInRange(

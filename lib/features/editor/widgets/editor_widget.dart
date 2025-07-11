@@ -10,6 +10,7 @@ import 'package:rei/bridge/rust/api/cursor.dart';
 import 'package:rei/features/editor/models/font_metrics.dart';
 import 'package:rei/features/editor/models/state.dart';
 import 'package:rei/features/editor/providers/editor.dart';
+import 'package:rei/features/editor/tabs/providers/tab.dart';
 import 'package:rei/features/editor/widgets/painters/editor_painter.dart';
 import 'package:rei/shared/providers/scroll_sync.dart';
 import 'package:rei/shared/services/file_service.dart';
@@ -240,8 +241,10 @@ class EditorWidget extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final focusNode = useFocusNode();
-    final state = ref.watch(editorProvider);
-    final notifier = ref.read(editorProvider.notifier);
+    final state = ref.watch(activeEditorProvider);
+    final activeTab = ref.read(activeTabProvider);
+    final notifier = ref.read(editorProvider(activeTab?.path ?? '').notifier);
+
     final verticalScrollController = useScrollController();
     final horizontalScrollController = useScrollController();
     StreamSubscription? fileSubscription;

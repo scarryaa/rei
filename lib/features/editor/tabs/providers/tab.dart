@@ -1,7 +1,15 @@
+import 'package:rei/features/editor/models/state.dart';
 import 'package:rei/features/editor/tabs/models/tab_state.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'tab.g.dart';
+
+final activeTabProvider = Provider<TabState?>((ref) {
+  final tabs = ref.watch(tabProvider);
+  return tabs.isNotEmpty
+      ? tabs.firstWhere((tab) => tab.isActive == true)
+      : null;
+});
 
 @riverpod
 class Tab extends _$Tab {
@@ -10,6 +18,23 @@ class Tab extends _$Tab {
   @override
   List<TabState> build() {
     return [];
+  }
+
+  void updateTabState({
+    required String path,
+    required EditorState editorState,
+  }) {
+    final tabIndex = state.indexWhere((tab) => tab.path == path);
+
+    if (tabIndex != -1) {
+      state = state.map((tab) {
+        if (tab.path == path) {
+          return tab.copyWith(savedState: editorState);
+        }
+
+        return tab;
+      }).toList();
+    }
   }
 
   void addTab(String name, String path) {

@@ -6,6 +6,7 @@ import 'package:rei/bridge/rust/api/cursor.dart';
 import 'package:rei/features/editor/models/font_metrics.dart';
 import 'package:rei/features/editor/models/state.dart';
 import 'package:rei/features/editor/providers/editor.dart';
+import 'package:rei/features/editor/tabs/providers/tab.dart';
 import 'package:rei/features/gutter/widgets/painters/gutter_painter.dart';
 import 'package:rei/shared/providers/scroll_sync.dart';
 
@@ -163,8 +164,11 @@ class GutterWidget extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final verticalScrollController = useScrollController();
-    final editorState = ref.watch(editorProvider);
-    final editorNotifier = ref.read(editorProvider.notifier);
+    final editorState = ref.watch(activeEditorProvider);
+    final activeTab = ref.read(activeTabProvider);
+    final editorNotifier = ref.read(
+      editorProvider(activeTab?.path ?? '').notifier,
+    );
 
     final textPainterWidth = useState(0.0);
     final verticalOffset = useState(0.0);
