@@ -1,7 +1,11 @@
+import 'dart:io';
 import 'dart:ui';
 
+import 'package:flutter/material.dart';
 import 'package:rei/features/editor/models/state.dart';
+import 'package:rei/features/editor/providers/editor.dart';
 import 'package:rei/features/editor/tabs/models/tab_state.dart';
+import 'package:rei/shared/services/file_service.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'tab.g.dart';
@@ -77,6 +81,27 @@ class Tab extends _$Tab {
     }
 
     return false;
+  }
+
+  void openFileInTab(String path) {
+    final tabsEmpty = state.isEmpty;
+    final name = path.split(Platform.pathSeparator).last;
+    final success = addTab(name, path);
+
+    // If success is false, it means there is already an open tab with the same path.
+    if (success) {
+      final fileContents = FileService.readFile(path);
+
+      if (tabsEmpty) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          final updatedNotifier = ref.read(editorProvider(path).notifier);
+          updatedNotifier.openFile(fileContents);
+        });
+      } else {
+        final updatedNotifier = ref.read(editorProvider(path).notifier);
+        updatedNotifier.openFile(fileContents);
+      }
+    }
   }
 
   void removeTab(String path) {

@@ -1,10 +1,7 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:rei/features/editor/models/font_metrics.dart';
-import 'package:rei/features/editor/providers/editor.dart';
 import 'package:rei/features/editor/tabs/providers/tab.dart';
 import 'package:rei/features/editor/tabs/widgets/tab_bar_widget.dart';
 import 'package:rei/features/editor/widgets/editor_widget.dart';
@@ -22,27 +19,7 @@ class EditorScreen extends HookConsumerWidget {
 
     useEffect(() {
       FileService.fileSelectedStream.listen((filePath) {
-        bool tabsEmpty = tabs.isEmpty;
-        final fileContents = FileService.readFile(filePath);
-
-        // TODO: Move this logic to a dedicated service?
-        final name = filePath.split(Platform.pathSeparator).last;
-        final success = tabNotifier.addTab(name, filePath);
-
-        // If success is false, it means there is already an open tab with the same path.
-        if (success) {
-          if (tabsEmpty) {
-            WidgetsBinding.instance.addPostFrameCallback((_) {
-              final updatedNotifier = ref.read(
-                editorProvider(filePath).notifier,
-              );
-              updatedNotifier.openFile(fileContents);
-            });
-          } else {
-            final updatedNotifier = ref.read(editorProvider(filePath).notifier);
-            updatedNotifier.openFile(fileContents);
-          }
-        }
+        tabNotifier.openFileInTab(filePath);
       });
 
       return null;
