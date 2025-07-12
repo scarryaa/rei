@@ -49,7 +49,7 @@ class Tab extends _$Tab {
     }
   }
 
-  void addTab(String name, String path) {
+  bool addTab(String name, String path) {
     final List<TabState> newTabs = state
         .map((tab) => tab.copyWith(isActive: false))
         .toList();
@@ -58,9 +58,25 @@ class Tab extends _$Tab {
         ? defaultTabPrefix + DateTime.now().toString()
         : path;
 
-    newTabs.add(TabState(path: adjustedPath, name: name, isActive: true));
+    final existingTabIndex = state.indexWhere(
+      (tab) => tab.path == adjustedPath,
+    );
+    if (existingTabIndex == -1) {
+      newTabs.add(TabState(path: adjustedPath, name: name, isActive: true));
 
-    state = newTabs;
+      state = newTabs;
+      return true;
+    } else {
+      // Tab already exists, just activate it.
+      final existingTabPath = state[existingTabIndex].path;
+      final List<TabState> newTabs = state
+          .map((tab) => tab.copyWith(isActive: tab.path == existingTabPath))
+          .toList();
+
+      state = newTabs;
+    }
+
+    return false;
   }
 
   void removeTab(String path) {

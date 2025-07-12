@@ -6,8 +6,12 @@ import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:rei/bridge/rust/api/cursor.dart';
+import 'package:rei/features/editor/models/char_offset.dart';
+import 'package:rei/features/editor/models/editor_padding.dart';
 import 'package:rei/features/editor/models/font_metrics.dart';
 import 'package:rei/features/editor/models/state.dart';
+import 'package:rei/features/editor/models/visible_chars.dart';
+import 'package:rei/features/editor/models/visible_lines.dart';
 import 'package:rei/features/editor/providers/editor.dart';
 import 'package:rei/features/editor/tabs/providers/tab.dart';
 import 'package:rei/features/editor/widgets/painters/editor_painter.dart';
@@ -243,6 +247,7 @@ class EditorWidget extends HookConsumerWidget {
     final state = ref.watch(activeEditorProvider);
     final activeTab = ref.watch(activeTabProvider);
     final notifier = ref.read(editorProvider(activeTab?.path ?? '').notifier);
+    final tabNotifier = ref.read(tabProvider.notifier);
 
     final verticalScrollController = useScrollController(
       keys: [activeTab!.path],
@@ -258,6 +263,8 @@ class EditorWidget extends HookConsumerWidget {
     final horizontalOffset = useState(0.0);
     final isDragging = useState(false);
     final shouldAutoScroll = useState(true);
+    final viewportHeight = useState(0.0);
+    final viewportWidth = useState(0.0);
     final GlobalKey painterKey = GlobalKey();
 
     final scrollSync = useMemoized(
@@ -272,7 +279,15 @@ class EditorWidget extends HookConsumerWidget {
       FileService.fileSelectedStream.listen((filePath) {
         final fileContents = FileService.readFile(filePath);
 
-        notifier.openFile(fileContents);
+        // TODO: Move this logic to a dedicated service?
+        final name = filePath.split(Platform.pathSeparator).last;
+        final success = tabNotifier.addTab(name, filePath);
+
+        // If success is false, it means there is already an open tab with the same path.
+        if (success) {
+          final updatedNotifier = ref.read(editorProvider(filePath).notifier);
+          updatedNotifier.openFile(fileContents);
+        }
       });
 
       return null;
@@ -300,7 +315,7 @@ class EditorWidget extends HookConsumerWidget {
       final vertical = verticalMultiplier * fontMetrics.lineHeight;
       final horizontal = horizontalMultiplier * fontMetrics.charWidth;
 
-      return (horizontal: horizontal, vertical: vertical);
+      return EditorPadding(horizontal: horizontal, vertical: vertical);
     }, [fontMetrics]);
 
     final size = useMemoized(() {
@@ -525,14 +540,24 @@ class EditorWidget extends HookConsumerWidget {
       () {
         if (!verticalScrollController.hasClients ||
             !verticalScrollController.position.hasViewportDimension) {
-          return (first: 0, last: 0);
+          final firstVisibleLine = 0;
+          final lastVisibleLine = max(
+            0,
+            min(
+              ((viewportHeight.value) / fontMetrics.lineHeight).ceil(),
+              state.buffer.lineCount(),
+            ),
+          );
+
+          return VisibleLines(first: firstVisibleLine, last: lastVisibleLine);
         }
 
-        final viewportHeight =
+        final scrollViewportHeight =
             verticalScrollController.position.viewportDimension;
         double verticalOffset;
-        if (verticalScrollController.offset + viewportHeight > size.height) {
-          verticalOffset = size.height - viewportHeight;
+        if (verticalScrollController.offset + scrollViewportHeight >
+            size.height) {
+          verticalOffset = size.height - scrollViewportHeight;
         } else {
           verticalOffset = verticalScrollController.offset;
         }
@@ -547,27 +572,38 @@ class EditorWidget extends HookConsumerWidget {
         final lastVisibleLine = max(
           0,
           min(
-            ((verticalOffset + viewportHeight) / fontMetrics.lineHeight).ceil(),
+            ((verticalOffset + scrollViewportHeight) / fontMetrics.lineHeight)
+                .ceil(),
             state.buffer.lineCount(),
           ),
         );
 
-        return (first: firstVisibleLine, last: lastVisibleLine);
+        return VisibleLines(first: firstVisibleLine, last: lastVisibleLine);
       },
       [
         state.buffer.version,
         state.cursor,
         verticalOffset.value,
         horizontalOffset.value,
+        activeTab.path,
         size,
       ],
     );
 
     final charOffset = useMemoized(() {
       if (!verticalScrollController.hasClients ||
-          !verticalScrollController.position.hasViewportDimension ||
-          state.buffer.lineCount() == 0) {
-        return (start: 0, end: 0);
+          !verticalScrollController.position.hasViewportDimension) {
+        if (state.buffer.lineCount() == 0) {
+          return CharOffset(start: 0, end: 0);
+        } else {
+          final firstChar = state.buffer.byteOfLine(row: visibleLines.first);
+          final lastChar =
+              state.buffer.byteOfLine(row: visibleLines.last - 1) +
+              state.buffer.lineLen(row: visibleLines.last - 1) +
+              1;
+
+          return CharOffset(start: firstChar, end: lastChar);
+        }
       }
 
       final firstChar = state.buffer.byteOfLine(row: visibleLines.first);
@@ -576,17 +612,27 @@ class EditorWidget extends HookConsumerWidget {
           state.buffer.lineLen(row: visibleLines.last - 1) +
           1;
 
-      return (start: firstChar, end: lastChar);
+      return CharOffset(start: firstChar, end: lastChar);
     }, [visibleLines, state.buffer.version]);
 
     final visibleChars = useMemoized(
       () {
         if (!horizontalScrollController.hasClients ||
             !horizontalScrollController.position.hasViewportDimension) {
-          return (first: 0, last: 0);
+          final horizontalOffset = 0;
+
+          final firstChar = max(
+            0,
+            (horizontalOffset / fontMetrics.charWidth).floor(),
+          );
+          final lastChar =
+              ((horizontalOffset + viewportWidth.value) / fontMetrics.charWidth)
+                  .ceil();
+
+          return VisibleChars(first: firstChar, last: lastChar);
         }
 
-        final viewportWidth =
+        final scrollControllerViewportWidth =
             horizontalScrollController.position.viewportDimension;
         final horizontalOffset = horizontalScrollController.offset;
 
@@ -595,14 +641,17 @@ class EditorWidget extends HookConsumerWidget {
           (horizontalOffset / fontMetrics.charWidth).floor(),
         );
         final lastChar =
-            ((horizontalOffset + viewportWidth) / fontMetrics.charWidth).ceil();
+            ((horizontalOffset + scrollControllerViewportWidth) /
+                    fontMetrics.charWidth)
+                .ceil();
 
-        return (first: firstChar, last: lastChar);
+        return VisibleChars(first: firstChar, last: lastChar);
       },
       [
         visibleLines,
         state.buffer.version,
         state.cursor,
+        activeTab.path,
         horizontalOffset.value,
       ],
     );
@@ -623,10 +672,15 @@ class EditorWidget extends HookConsumerWidget {
       innerTextPainter.layout();
 
       return innerTextPainter;
-    }, [state.buffer.version, visibleLines, visibleChars]);
+    }, [state.buffer.version, visibleLines, visibleChars, activeTab.path]);
 
     return LayoutBuilder(
       builder: (context, constraints) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          viewportWidth.value = constraints.maxWidth;
+          viewportHeight.value = constraints.maxHeight;
+        });
+
         final width = max(size.width, constraints.maxWidth);
         final height = max(size.height, constraints.maxHeight);
         Size newSize = Size(width, height);
