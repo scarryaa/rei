@@ -329,12 +329,34 @@ class EditorWidget extends HookConsumerWidget {
       void updateVerticalOffset(double newOffset) {
         if (verticalOffset.value != newOffset) {
           verticalOffset.value = newOffset;
+
+          Future.microtask(() {
+            final currentPath = activeTab.path;
+
+            ref
+                .read(tabProvider.notifier)
+                .updateScrollOffset(
+                  currentPath,
+                  Offset(horizontalOffset.value, newOffset),
+                );
+          });
         }
       }
 
       void updateHorizontalOffset(double newOffset) {
         if (horizontalOffset.value != newOffset) {
           horizontalOffset.value = newOffset;
+
+          Future.microtask(() {
+            final currentPath = activeTab.path;
+
+            ref
+                .read(tabProvider.notifier)
+                .updateScrollOffset(
+                  currentPath,
+                  Offset(newOffset, verticalOffset.value),
+                );
+          });
         }
       }
 
@@ -422,107 +444,124 @@ class EditorWidget extends HookConsumerWidget {
       };
     }, [activeTab.path]);
 
-    useEffect(() {
-      void updateVerticalOffset() {
+    useEffect(
+      () {
+        void updateVerticalOffset() {
+          if (!verticalScrollController.hasClients ||
+              !verticalScrollController.position.hasContentDimensions) {
+            return;
+          }
+
+          Future.microtask(() {
+            final newOffset = min(
+              verticalScrollController.offset,
+              verticalScrollController.position.maxScrollExtent,
+            );
+
+            if (verticalOffset.value != newOffset) {
+              verticalOffset.value = newOffset;
+
+              final currentPath = activeTab.path;
+
+              ref
+                  .read(tabProvider.notifier)
+                  .updateScrollOffset(
+                    currentPath,
+                    Offset(horizontalOffset.value, newOffset),
+                  );
+            }
+          });
+        }
+
+        void updateHorizontalOffset() {
+          if (!horizontalScrollController.hasClients ||
+              !horizontalScrollController.position.hasContentDimensions) {
+            return;
+          }
+
+          Future.microtask(() {
+            final newOffset = min(
+              horizontalScrollController.offset,
+              horizontalScrollController.position.maxScrollExtent,
+            );
+
+            if (horizontalOffset.value != newOffset) {
+              horizontalOffset.value = newOffset;
+
+              final currentPath = activeTab.path;
+
+              ref
+                  .read(tabProvider.notifier)
+                  .updateScrollOffset(
+                    currentPath,
+                    Offset(newOffset, verticalOffset.value),
+                  );
+            }
+          });
+        }
+
+        void verticalScrollListener() => updateVerticalOffset();
+        void horizontalScrollListener() => updateHorizontalOffset();
+
+        verticalScrollController.addListener(verticalScrollListener);
+        updateVerticalOffset();
+        horizontalScrollController.addListener(horizontalScrollListener);
+        updateHorizontalOffset();
+
+        return () {
+          verticalScrollController.removeListener(verticalScrollListener);
+          horizontalScrollController.removeListener(horizontalScrollListener);
+        };
+      },
+      [
+        state.buffer.version,
+        state.cursor,
+        verticalOffset.value,
+        horizontalOffset.value,
+      ],
+    );
+
+    final visibleLines = useMemoized(
+      () {
         if (!verticalScrollController.hasClients ||
-            !verticalScrollController.position.hasContentDimensions) {
-          return;
+            !verticalScrollController.position.hasViewportDimension) {
+          return (first: 0, last: 0);
         }
 
-        final newOffset = min(
-          verticalScrollController.offset,
-          verticalScrollController.position.maxScrollExtent,
+        final viewportHeight =
+            verticalScrollController.position.viewportDimension;
+        double verticalOffset;
+        if (verticalScrollController.offset + viewportHeight > size.height) {
+          verticalOffset = size.height - viewportHeight;
+        } else {
+          verticalOffset = verticalScrollController.offset;
+        }
+
+        final firstVisibleLine = max(
+          0,
+          min(
+            ((verticalOffset) / fontMetrics.lineHeight).floor(),
+            state.buffer.lineCount() - 1,
+          ),
+        );
+        final lastVisibleLine = max(
+          0,
+          min(
+            ((verticalOffset + viewportHeight) / fontMetrics.lineHeight).ceil(),
+            state.buffer.lineCount(),
+          ),
         );
 
-        if (verticalOffset.value != newOffset) {
-          verticalOffset.value = newOffset;
-
-          Future.microtask(() {
-            final currentPath = activeTab.path;
-
-            ref
-                .read(tabProvider.notifier)
-                .updateScrollOffset(
-                  currentPath,
-                  Offset(horizontalOffset.value, newOffset),
-                );
-          });
-        }
-      }
-
-      void updateHorizontalOffset() {
-        if (!horizontalScrollController.hasClients ||
-            !horizontalScrollController.position.hasContentDimensions) {
-          return;
-        }
-
-        final newOffset = min(
-          horizontalScrollController.offset,
-          horizontalScrollController.position.maxScrollExtent,
-        );
-
-        if (horizontalOffset.value != newOffset) {
-          horizontalOffset.value = newOffset;
-
-          Future.microtask(() {
-            final currentPath = activeTab.path;
-
-            ref
-                .read(tabProvider.notifier)
-                .updateScrollOffset(
-                  currentPath,
-                  Offset(newOffset, verticalOffset.value),
-                );
-          });
-        }
-      }
-
-      void verticalScrollListener() => updateVerticalOffset();
-      void horizontalScrollListener() => updateHorizontalOffset();
-
-      verticalScrollController.addListener(verticalScrollListener);
-      updateVerticalOffset();
-      horizontalScrollController.addListener(horizontalScrollListener);
-      updateHorizontalOffset();
-
-      return () {
-        verticalScrollController.removeListener(verticalScrollListener);
-        horizontalScrollController.removeListener(horizontalScrollListener);
-      };
-    }, [state.buffer.version, state.cursor, verticalOffset.value]);
-
-    final visibleLines = useMemoized(() {
-      if (!verticalScrollController.hasClients ||
-          !verticalScrollController.position.hasViewportDimension) {
-        return (first: 0, last: 0);
-      }
-
-      final viewportHeight =
-          verticalScrollController.position.viewportDimension;
-      double verticalOffset;
-      if (verticalScrollController.offset + viewportHeight > size.height) {
-        verticalOffset = size.height - viewportHeight;
-      } else {
-        verticalOffset = verticalScrollController.offset;
-      }
-
-      final firstVisibleLine = max(
-        0,
-        min(
-          ((verticalOffset) / fontMetrics.lineHeight).floor(),
-          state.buffer.lineCount() - 1,
-        ),
-      );
-      final lastVisibleLine = max(
-        0,
-        min(
-          ((verticalOffset + viewportHeight) / fontMetrics.lineHeight).ceil(),
-          state.buffer.lineCount(),
-        ),
-      );
-
-      return (first: firstVisibleLine, last: lastVisibleLine);
-    }, [state.buffer.version, state.cursor, verticalOffset.value, size]);
+        return (first: firstVisibleLine, last: lastVisibleLine);
+      },
+      [
+        state.buffer.version,
+        state.cursor,
+        verticalOffset.value,
+        horizontalOffset.value,
+        size,
+      ],
+    );
 
     final charOffset = useMemoized(() {
       if (!verticalScrollController.hasClients ||
