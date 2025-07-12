@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:rei/features/editor/models/state.dart';
 import 'package:rei/features/editor/tabs/models/tab_state.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -18,6 +20,16 @@ class Tab extends _$Tab {
   @override
   List<TabState> build() {
     return [];
+  }
+
+  void updateScrollOffset(String path, Offset offset) {
+    state = state.map((tab) {
+      if (tab.path == path) {
+        return tab.copyWith(scrollOffset: offset);
+      }
+
+      return tab;
+    }).toList();
   }
 
   void updateTabState({

@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 
@@ -242,12 +241,15 @@ class EditorWidget extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final focusNode = useFocusNode();
     final state = ref.watch(activeEditorProvider);
-    final activeTab = ref.read(activeTabProvider);
+    final activeTab = ref.watch(activeTabProvider);
     final notifier = ref.read(editorProvider(activeTab?.path ?? '').notifier);
 
-    final verticalScrollController = useScrollController();
-    final horizontalScrollController = useScrollController();
-    StreamSubscription? fileSubscription;
+    final verticalScrollController = useScrollController(
+      keys: [activeTab!.path],
+    );
+    final horizontalScrollController = useScrollController(
+      keys: [activeTab.path],
+    );
 
     final scrollSyncState = ref.watch(scrollSyncProvider);
     final scrollSyncNotifier = ref.read(scrollSyncProvider.notifier);
@@ -267,7 +269,7 @@ class EditorWidget extends HookConsumerWidget {
     useListenable(horizontalScrollController);
 
     useEffect(() {
-      fileSubscription = FileService.fileSelectedStream.listen((filePath) {
+      FileService.fileSelectedStream.listen((filePath) {
         final fileContents = FileService.readFile(filePath);
 
         notifier.openFile(fileContents);
@@ -391,6 +393,36 @@ class EditorWidget extends HookConsumerWidget {
     }, [state.cursor, state.selection]);
 
     useEffect(() {
+      bool restored = false;
+
+      void maybeRestoreScroll() {
+        if (!restored &&
+            verticalScrollController.hasClients &&
+            horizontalScrollController.hasClients) {
+          verticalOffset.value = activeTab.scrollOffset.dy;
+          horizontalOffset.value = activeTab.scrollOffset.dx;
+
+          verticalScrollController.jumpTo(activeTab.scrollOffset.dy);
+          horizontalScrollController.jumpTo(activeTab.scrollOffset.dx);
+
+          // Hacky way to force the gutter to update.
+          // ignore: invalid_use_of_protected_member, invalid_use_of_visible_for_testing_member
+          verticalScrollController.notifyListeners();
+          restored = true;
+        }
+      }
+
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        maybeRestoreScroll();
+      });
+
+      return () {
+        verticalScrollController.removeListener(maybeRestoreScroll);
+        horizontalScrollController.removeListener(maybeRestoreScroll);
+      };
+    }, [activeTab.path]);
+
+    useEffect(() {
       void updateVerticalOffset() {
         if (!verticalScrollController.hasClients ||
             !verticalScrollController.position.hasContentDimensions) {
@@ -404,6 +436,17 @@ class EditorWidget extends HookConsumerWidget {
 
         if (verticalOffset.value != newOffset) {
           verticalOffset.value = newOffset;
+
+          Future.microtask(() {
+            final currentPath = activeTab.path;
+
+            ref
+                .read(tabProvider.notifier)
+                .updateScrollOffset(
+                  currentPath,
+                  Offset(horizontalOffset.value, newOffset),
+                );
+          });
         }
       }
 
@@ -420,20 +463,25 @@ class EditorWidget extends HookConsumerWidget {
 
         if (horizontalOffset.value != newOffset) {
           horizontalOffset.value = newOffset;
+
+          Future.microtask(() {
+            final currentPath = activeTab.path;
+
+            ref
+                .read(tabProvider.notifier)
+                .updateScrollOffset(
+                  currentPath,
+                  Offset(newOffset, verticalOffset.value),
+                );
+          });
         }
       }
 
-      void verticalScrollListener() {
-        updateVerticalOffset();
-      }
-
-      void horizontalScrollListener() {
-        updateHorizontalOffset();
-      }
+      void verticalScrollListener() => updateVerticalOffset();
+      void horizontalScrollListener() => updateHorizontalOffset();
 
       verticalScrollController.addListener(verticalScrollListener);
       updateVerticalOffset();
-
       horizontalScrollController.addListener(horizontalScrollListener);
       updateHorizontalOffset();
 
@@ -441,7 +489,7 @@ class EditorWidget extends HookConsumerWidget {
         verticalScrollController.removeListener(verticalScrollListener);
         horizontalScrollController.removeListener(horizontalScrollListener);
       };
-    }, [state.buffer.version, state.cursor]);
+    }, [state.buffer.version, state.cursor, verticalOffset.value]);
 
     final visibleLines = useMemoized(() {
       if (!verticalScrollController.hasClients ||
