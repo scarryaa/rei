@@ -434,7 +434,7 @@ class EditorWidget extends HookConsumerWidget {
         }
       }
 
-      WidgetsBinding.instance.addPostFrameCallback((_) {
+      Future.microtask(() {
         maybeRestoreScroll();
       });
 
