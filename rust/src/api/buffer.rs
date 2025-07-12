@@ -240,6 +240,10 @@ impl Buffer {
 
     #[frb(sync, type_64bit_int)]
     pub fn byte_of_line(&self, row: usize) -> usize {
+        if self.line_count() == 0 {
+            return 0;
+        }
+
         self.text.byte_of_line(row)
     }
 

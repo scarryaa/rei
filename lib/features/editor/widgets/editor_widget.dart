@@ -442,12 +442,12 @@ class EditorWidget extends HookConsumerWidget {
     useEffect(
       () {
         void updateVerticalOffset() {
-          if (!verticalScrollController.hasClients ||
-              !verticalScrollController.position.hasContentDimensions) {
-            return;
-          }
-
           Future.microtask(() {
+            if (!verticalScrollController.hasClients ||
+                !verticalScrollController.position.hasContentDimensions) {
+              return;
+            }
+
             final newOffset = min(
               verticalScrollController.offset,
               verticalScrollController.position.maxScrollExtent,
@@ -469,12 +469,12 @@ class EditorWidget extends HookConsumerWidget {
         }
 
         void updateHorizontalOffset() {
-          if (!horizontalScrollController.hasClients ||
-              !horizontalScrollController.position.hasContentDimensions) {
-            return;
-          }
-
           Future.microtask(() {
+            if (!horizontalScrollController.hasClients ||
+                !horizontalScrollController.position.hasContentDimensions) {
+              return;
+            }
+
             final newOffset = min(
               horizontalScrollController.offset,
               horizontalScrollController.position.maxScrollExtent,
@@ -573,7 +573,7 @@ class EditorWidget extends HookConsumerWidget {
     final charOffset = useMemoized(() {
       if (!verticalScrollController.hasClients ||
           !verticalScrollController.position.hasViewportDimension) {
-        if (state.buffer.lineCount() == 0) {
+        if (state.buffer.lineCountWithTrailingNewline() - 1 <= 0) {
           return CharOffset(start: 0, end: 0);
         } else {
           if (visibleLines.first == 0 && visibleLines.last == 0) {
