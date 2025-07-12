@@ -79,34 +79,45 @@ class EditorScreen extends HookConsumerWidget {
               ),
               Visibility(
                 visible: tabs.isEmpty,
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Column(
-                        mainAxisSize: MainAxisSize.max,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        spacing: 8.0,
-                        children: [
-                          Icon(Icons.tab, size: 64.0, color: Color(0x50FFFFFF)),
-                          TextButton(
-                            onPressed: () => tabNotifier.addTab('Untitled', ''),
-                            child: Text(
-                              'Open a new tab',
-                              style: textStyle.copyWith(
-                                fontFamily: 'IBM Plex Sans',
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                child: EmptyEditorState(
+                  textStyle: textStyle,
+                  onAddTab: () => tabNotifier.addTab('Untitled', ''),
                 ),
               ),
             ],
           ),
         ),
       ],
+    );
+  }
+}
+
+class EmptyEditorState extends StatelessWidget {
+  const EmptyEditorState({
+    super.key,
+    required this.textStyle,
+    required this.onAddTab,
+  });
+
+  final TextStyle textStyle;
+  final VoidCallback onAddTab;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.tab, size: 64.0, color: Color(0x50FFFFFF)),
+          TextButton(
+            onPressed: onAddTab,
+            child: Text(
+              'Open a new tab',
+              style: textStyle.copyWith(fontFamily: 'IBM Plex Sans'),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
