@@ -1,12 +1,16 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:rei/features/editor/models/font_metrics.dart';
+import 'package:rei/features/editor/providers/editor.dart';
 import 'package:rei/features/editor/tabs/providers/tab.dart';
 import 'package:rei/features/editor/tabs/widgets/tab_bar_widget.dart';
 import 'package:rei/features/editor/widgets/editor_widget.dart';
 import 'package:rei/features/file_explorer/widgets/file_explorer_widget.dart';
 import 'package:rei/features/gutter/widgets/gutter_widget.dart';
+import 'package:rei/shared/services/file_service.dart';
 
 class EditorScreen extends HookConsumerWidget {
   const EditorScreen({super.key});
@@ -15,6 +19,34 @@ class EditorScreen extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tabs = ref.watch(tabProvider);
     final tabNotifier = ref.read(tabProvider.notifier);
+
+    useEffect(() {
+      FileService.fileSelectedStream.listen((filePath) {
+        bool tabsEmpty = tabs.isEmpty;
+        final fileContents = FileService.readFile(filePath);
+
+        // TODO: Move this logic to a dedicated service?
+        final name = filePath.split(Platform.pathSeparator).last;
+        final success = tabNotifier.addTab(name, filePath);
+
+        // If success is false, it means there is already an open tab with the same path.
+        if (success) {
+          if (tabsEmpty) {
+            WidgetsBinding.instance.addPostFrameCallback((_) {
+              final updatedNotifier = ref.read(
+                editorProvider(filePath).notifier,
+              );
+              updatedNotifier.openFile(fileContents);
+            });
+          } else {
+            final updatedNotifier = ref.read(editorProvider(filePath).notifier);
+            updatedNotifier.openFile(fileContents);
+          }
+        }
+      });
+
+      return null;
+    }, []);
 
     final textStyle = useMemoized(
       () => TextStyle(
@@ -41,8 +73,11 @@ class EditorScreen extends HookConsumerWidget {
       children: [
         FileExplorerWidget(),
         Expanded(
-          child: tabs.isNotEmpty
-              ? Column(
+          child: Stack(
+            children: [
+              Visibility(
+                visible: tabs.isNotEmpty,
+                child: Column(
                   children: [
                     TabBarWidget(),
                     Expanded(
@@ -63,22 +98,36 @@ class EditorScreen extends HookConsumerWidget {
                       ),
                     ),
                   ],
-                )
-              : Column(
-                  mainAxisSize: MainAxisSize.max,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  spacing: 8.0,
+                ),
+              ),
+              Visibility(
+                visible: tabs.isEmpty,
+                child: Row(
                   children: [
-                    Icon(Icons.tab, size: 64.0, color: Color(0x50FFFFFF)),
-                    TextButton(
-                      onPressed: () => tabNotifier.addTab('Untitled', ''),
-                      child: Text(
-                        'Open a new tab',
-                        style: textStyle.copyWith(fontFamily: 'IBM Plex Sans'),
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.max,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        spacing: 8.0,
+                        children: [
+                          Icon(Icons.tab, size: 64.0, color: Color(0x50FFFFFF)),
+                          TextButton(
+                            onPressed: () => tabNotifier.addTab('Untitled', ''),
+                            child: Text(
+                              'Open a new tab',
+                              style: textStyle.copyWith(
+                                fontFamily: 'IBM Plex Sans',
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
+              ),
+            ],
+          ),
         ),
       ],
     );

@@ -16,7 +16,6 @@ import 'package:rei/features/editor/providers/editor.dart';
 import 'package:rei/features/editor/tabs/providers/tab.dart';
 import 'package:rei/features/editor/widgets/painters/editor_painter.dart';
 import 'package:rei/shared/providers/scroll_sync.dart';
-import 'package:rei/shared/services/file_service.dart';
 
 class EditorWidget extends HookConsumerWidget {
   const EditorWidget({
@@ -247,7 +246,6 @@ class EditorWidget extends HookConsumerWidget {
     final state = ref.watch(activeEditorProvider);
     final activeTab = ref.watch(activeTabProvider);
     final notifier = ref.read(editorProvider(activeTab?.path ?? '').notifier);
-    final tabNotifier = ref.read(tabProvider.notifier);
 
     final verticalScrollController = useScrollController(
       keys: [activeTab!.path],
@@ -274,24 +272,6 @@ class EditorWidget extends HookConsumerWidget {
 
     useListenable(verticalScrollController);
     useListenable(horizontalScrollController);
-
-    useEffect(() {
-      FileService.fileSelectedStream.listen((filePath) {
-        final fileContents = FileService.readFile(filePath);
-
-        // TODO: Move this logic to a dedicated service?
-        final name = filePath.split(Platform.pathSeparator).last;
-        final success = tabNotifier.addTab(name, filePath);
-
-        // If success is false, it means there is already an open tab with the same path.
-        if (success) {
-          final updatedNotifier = ref.read(editorProvider(filePath).notifier);
-          updatedNotifier.openFile(fileContents);
-        }
-      });
-
-      return null;
-    }, []);
 
     useEffect(() {
       scrollSync.startListening();
@@ -596,6 +576,10 @@ class EditorWidget extends HookConsumerWidget {
         if (state.buffer.lineCount() == 0) {
           return CharOffset(start: 0, end: 0);
         } else {
+          if (visibleLines.first == 0 && visibleLines.last == 0) {
+            return CharOffset(start: 0, end: 0);
+          }
+
           final firstChar = state.buffer.byteOfLine(row: visibleLines.first);
           final lastChar =
               state.buffer.byteOfLine(row: visibleLines.last - 1) +
