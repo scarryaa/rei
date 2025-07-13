@@ -46,6 +46,7 @@ class EditorWidget extends HookConsumerWidget {
     Editor notifier,
     TabState activeTab,
     Tab tabNotifier,
+    WidgetRef ref,
   ) async {
     final content = state.buffer.toString();
 
@@ -54,6 +55,12 @@ class EditorWidget extends HookConsumerWidget {
     if (newPath != null) {
       tabNotifier.updateOriginalContent(activeTab.path, content);
       tabNotifier.updatePath(activeTab.path, newPath);
+
+      final updatedNotifier = ref.read(editorProvider(newPath).notifier);
+
+      if (activeTab.savedState != null) {
+        updatedNotifier.setState(activeTab.savedState!);
+      }
     }
   }
 
@@ -175,6 +182,7 @@ class EditorWidget extends HookConsumerWidget {
     ValueNotifier<bool> shouldAutoScroll,
     TabState activeTab,
     Tab tabNotifier,
+    WidgetRef ref,
   ) {
     bool isSuperPressed;
     if (Platform.isMacOS) {
@@ -226,7 +234,7 @@ class EditorWidget extends HookConsumerWidget {
       case LogicalKeyboardKey.keyS:
         if (isSuperPressed) {
           if (isShiftPressed) {
-            _handleSaveAs(state, notifier, activeTab, tabNotifier);
+            _handleSaveAs(state, notifier, activeTab, tabNotifier, ref);
             handled = true;
           } else {
             _handleSave(state, notifier, activeTab, tabNotifier);
@@ -246,6 +254,7 @@ class EditorWidget extends HookConsumerWidget {
     ValueNotifier<bool> shouldAutoScroll,
     TabState activeTab,
     Tab tabNotifier,
+    WidgetRef ref,
   ) {
     if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
       return KeyEventResult.ignored;
@@ -261,6 +270,7 @@ class EditorWidget extends HookConsumerWidget {
       shouldAutoScroll,
       activeTab,
       tabNotifier,
+      ref,
     )) {
       return KeyEventResult.handled;
     }
@@ -752,6 +762,7 @@ class EditorWidget extends HookConsumerWidget {
                       shouldAutoScroll,
                       activeTab,
                       tabNotifier,
+                      ref,
                     ),
                     child: GestureDetector(
                       onTapDown: (details) => _handleTapDown(

@@ -127,12 +127,12 @@ class Tab extends _$Tab {
       if (tabsEmpty) {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           final updatedNotifier = ref.read(editorProvider(path).notifier);
-          updatedNotifier.openFile(fileContents);
+          updatedNotifier.openFile(fileContents, null, null);
           updateOriginalContent(path, fileContents);
         });
       } else {
         final updatedNotifier = ref.read(editorProvider(path).notifier);
-        updatedNotifier.openFile(fileContents);
+        updatedNotifier.openFile(fileContents, null, null);
         updateOriginalContent(path, fileContents);
       }
     }

@@ -34,16 +34,20 @@ class Editor extends _$Editor {
     );
   }
 
+  void setState(EditorState newState) {
+    state = newState;
+  }
+
   void _syncToTab() {
     final tabNotifier = ref.read(tabProvider.notifier);
     tabNotifier.updateTabState(path: path, editorState: state);
   }
 
-  void openFile(String content) {
+  void openFile(String content, Cursor? cursor, Selection? selection) {
     state = state.copyWith(
       buffer: Buffer.from(text: content),
-      cursor: Cursor.default_(),
-      selection: Selection.default_(),
+      cursor: cursor ?? Cursor.default_(),
+      selection: selection ?? Selection.default_(),
     );
     _syncToTab();
   }
