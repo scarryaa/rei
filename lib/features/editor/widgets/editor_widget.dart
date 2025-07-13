@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:math';
 
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Tab;
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -13,9 +13,11 @@ import 'package:rei/features/editor/models/state.dart';
 import 'package:rei/features/editor/models/visible_chars.dart';
 import 'package:rei/features/editor/models/visible_lines.dart';
 import 'package:rei/features/editor/providers/editor.dart';
+import 'package:rei/features/editor/tabs/models/tab_state.dart';
 import 'package:rei/features/editor/tabs/providers/tab.dart';
 import 'package:rei/features/editor/widgets/painters/editor_painter.dart';
 import 'package:rei/shared/providers/scroll_sync.dart';
+import 'package:rei/shared/services/file_service.dart';
 
 class EditorWidget extends HookConsumerWidget {
   const EditorWidget({
@@ -26,6 +28,34 @@ class EditorWidget extends HookConsumerWidget {
 
   final TextStyle textStyle;
   final FontMetrics fontMetrics;
+
+  void _handleSave(
+    EditorState state,
+    Editor notifier,
+    TabState activeTab,
+    Tab tabNotifier,
+  ) {
+    final content = state.buffer.toString();
+
+    FileService.writeFile(activeTab.path, content);
+    tabNotifier.updateOriginalContent(activeTab.path, content);
+  }
+
+  Future<void> _handleSaveAs(
+    EditorState state,
+    Editor notifier,
+    TabState activeTab,
+    Tab tabNotifier,
+  ) async {
+    final content = state.buffer.toString();
+
+    final newPath = await FileService.writeFileAs(activeTab.path, content);
+
+    if (newPath != null) {
+      tabNotifier.updateOriginalContent(activeTab.path, content);
+      tabNotifier.updatePath(activeTab.path, newPath);
+    }
+  }
 
   Cursor _offsetToCursorPosition(
     Offset offset,
@@ -143,6 +173,8 @@ class EditorWidget extends HookConsumerWidget {
     EditorState state,
     Editor notifier,
     ValueNotifier<bool> shouldAutoScroll,
+    TabState activeTab,
+    Tab tabNotifier,
   ) {
     bool isSuperPressed;
     if (Platform.isMacOS) {
@@ -150,6 +182,8 @@ class EditorWidget extends HookConsumerWidget {
     } else {
       isSuperPressed = HardwareKeyboard.instance.isControlPressed;
     }
+    final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
+
     bool handled = false;
 
     switch (event.logicalKey) {
@@ -188,6 +222,17 @@ class EditorWidget extends HookConsumerWidget {
           _handlePaste(state, notifier);
           handled = true;
         }
+
+      case LogicalKeyboardKey.keyS:
+        if (isSuperPressed) {
+          if (isShiftPressed) {
+            _handleSaveAs(state, notifier, activeTab, tabNotifier);
+            handled = true;
+          } else {
+            _handleSave(state, notifier, activeTab, tabNotifier);
+            handled = true;
+          }
+        }
     }
 
     return handled;
@@ -199,6 +244,8 @@ class EditorWidget extends HookConsumerWidget {
     EditorState state,
     Editor notifier,
     ValueNotifier<bool> shouldAutoScroll,
+    TabState activeTab,
+    Tab tabNotifier,
   ) {
     if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
       return KeyEventResult.ignored;
@@ -207,7 +254,14 @@ class EditorWidget extends HookConsumerWidget {
     final bool isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
 
     // Handle shortcuts
-    if (_handleShortcuts(event, state, notifier, shouldAutoScroll)) {
+    if (_handleShortcuts(
+      event,
+      state,
+      notifier,
+      shouldAutoScroll,
+      activeTab,
+      tabNotifier,
+    )) {
       return KeyEventResult.handled;
     }
 
@@ -246,6 +300,7 @@ class EditorWidget extends HookConsumerWidget {
     final state = ref.watch(activeEditorProvider);
     final activeTab = ref.watch(activeTabProvider);
     final notifier = ref.read(editorProvider(activeTab?.path ?? '').notifier);
+    final tabNotifier = ref.read(tabProvider.notifier);
 
     final verticalScrollController = useScrollController(
       keys: [activeTab!.path],
@@ -695,6 +750,8 @@ class EditorWidget extends HookConsumerWidget {
                       state,
                       notifier,
                       shouldAutoScroll,
+                      activeTab,
+                      tabNotifier,
                     ),
                     child: GestureDetector(
                       onTapDown: (details) => _handleTapDown(

@@ -21,6 +21,7 @@ dependencies:
   json_annotation: ^4.9.0
   meta: ^1.16.0
   file_picker: ^10.2.0
+  path: ^1.9.1
 
 dev_dependencies:
   flutter_test:

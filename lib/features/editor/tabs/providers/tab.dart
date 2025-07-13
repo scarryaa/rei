@@ -25,10 +25,22 @@ class Tab extends _$Tab {
     return [];
   }
 
+  void updatePath(String oldPath, String newPath) {
+    state = state.map((tab) {
+      if (tab.path == oldPath) {
+        final newName = newPath.split(Platform.pathSeparator).last;
+
+        return tab.copyWith(path: newPath, name: newName);
+      } else {
+        return tab;
+      }
+    }).toList();
+  }
+
   void updateOriginalContent(String path, String content) {
     state = state.map((tab) {
       if (tab.path == path) {
-        return tab.copyWith(originalContent: content);
+        return tab.copyWith(originalContent: content, isDirty: false);
       }
 
       return tab;
