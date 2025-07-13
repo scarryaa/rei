@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:rei/features/editor/models/state.dart';
@@ -26,6 +25,16 @@ class Tab extends _$Tab {
     return [];
   }
 
+  void updateOriginalContent(String path, String content) {
+    state = state.map((tab) {
+      if (tab.path == path) {
+        return tab.copyWith(originalContent: content);
+      }
+
+      return tab;
+    }).toList();
+  }
+
   void updateScrollOffset(String path, Offset offset) {
     state = state.map((tab) {
       if (tab.path == path) {
@@ -45,12 +54,23 @@ class Tab extends _$Tab {
     if (tabIndex != -1) {
       state = state.map((tab) {
         if (tab.path == path) {
-          return tab.copyWith(savedState: editorState);
+          return tab.copyWith(
+            savedState: editorState,
+            isDirty: _checkDirty(tab, editorState.buffer.toString()),
+          );
         }
 
         return tab;
       }).toList();
     }
+  }
+
+  bool _checkDirty(TabState tab, String content) {
+    if (tab.originalContent == content) {
+      return false;
+    }
+
+    return true;
   }
 
   bool addTab(String name, String path) {
@@ -96,10 +116,12 @@ class Tab extends _$Tab {
         WidgetsBinding.instance.addPostFrameCallback((_) {
           final updatedNotifier = ref.read(editorProvider(path).notifier);
           updatedNotifier.openFile(fileContents);
+          updateOriginalContent(path, fileContents);
         });
       } else {
         final updatedNotifier = ref.read(editorProvider(path).notifier);
         updatedNotifier.openFile(fileContents);
+        updateOriginalContent(path, fileContents);
       }
     }
   }

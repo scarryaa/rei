@@ -10,6 +10,7 @@ sealed class TabState with _$TabState {
   const factory TabState({
     required String path,
     required String name,
+    @Default('') String originalContent,
     @Default(false) bool isActive,
     @Default(false) bool isDirty,
     @Default(null) EditorState? savedState,
