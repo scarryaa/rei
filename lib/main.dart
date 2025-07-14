@@ -1,3 +1,4 @@
+import 'package:bitsdojo_window/bitsdojo_window.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:rei/bridge/rust/frb_generated.dart';
@@ -6,6 +7,13 @@ import 'package:rei/features/editor/screens/editor_screen.dart';
 Future<void> main() async {
   await RustLib.init();
   runApp(ProviderScope(child: const ReiApp()));
+
+  doWhenWindowReady(() {
+    const initialSize = Size(800, 600);
+    appWindow.size = initialSize;
+    appWindow.alignment = Alignment.center;
+    appWindow.show();
+  });
 }
 
 class ReiApp extends StatelessWidget {

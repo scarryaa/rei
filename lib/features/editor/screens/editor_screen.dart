@@ -8,6 +8,7 @@ import 'package:rei/features/editor/widgets/editor_widget.dart';
 import 'package:rei/features/file_explorer/widgets/file_explorer_widget.dart';
 import 'package:rei/features/gutter/widgets/gutter_widget.dart';
 import 'package:rei/shared/services/file_service.dart';
+import 'package:rei/shared/widgets/title_bar_widget.dart';
 
 class EditorScreen extends HookConsumerWidget {
   const EditorScreen({super.key});
@@ -46,42 +47,49 @@ class EditorScreen extends HookConsumerWidget {
       );
     }, [textStyle]);
 
-    return Row(
+    return Column(
       children: [
-        FileExplorerWidget(),
+        TitleBarWidget(),
         Expanded(
-          child: Stack(
+          child: Row(
             children: [
-              Visibility(
-                visible: tabs.isNotEmpty,
-                child: Column(
+              FileExplorerWidget(),
+              Expanded(
+                child: Stack(
                   children: [
-                    TabBarWidget(),
-                    Expanded(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                    Visibility(
+                      visible: tabs.isNotEmpty,
+                      child: Column(
                         children: [
-                          GutterWidget(
-                            textStyle: textStyle,
-                            fontMetrics: fontMetrics,
-                          ),
+                          TabBarWidget(),
                           Expanded(
-                            child: EditorWidget(
-                              textStyle: textStyle,
-                              fontMetrics: fontMetrics,
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                GutterWidget(
+                                  textStyle: textStyle,
+                                  fontMetrics: fontMetrics,
+                                ),
+                                Expanded(
+                                  child: EditorWidget(
+                                    textStyle: textStyle,
+                                    fontMetrics: fontMetrics,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
                       ),
                     ),
+                    Visibility(
+                      visible: tabs.isEmpty,
+                      child: EmptyEditorState(
+                        textStyle: textStyle,
+                        onAddTab: () => tabNotifier.addTab('Untitled', ''),
+                      ),
+                    ),
                   ],
-                ),
-              ),
-              Visibility(
-                visible: tabs.isEmpty,
-                child: EmptyEditorState(
-                  textStyle: textStyle,
-                  onAddTab: () => tabNotifier.addTab('Untitled', ''),
                 ),
               ),
             ],
