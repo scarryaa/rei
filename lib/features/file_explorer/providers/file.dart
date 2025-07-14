@@ -5,13 +5,27 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 // ignore: library_prefixes
 import 'dart:io' as IO;
 
+import 'package:shared_preferences/shared_preferences.dart';
+
 part 'file.g.dart';
 
 @riverpod
 class File extends _$File {
+  static const String _key = 'file_explorer_dir';
+
   @override
   FileExplorerState build() {
+    init();
     return FileExplorerState(root: null);
+  }
+
+  Future<void> init() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final dir = prefs.getString(_key);
+
+    if (dir != null) {
+      await setRootAndLoadChildren(dir);
+    }
   }
 
   void setRoot(FileEntry root) {
@@ -107,6 +121,7 @@ class File extends _$File {
         );
       }).toList();
     } catch (e) {
+      print(e);
       return [];
     }
   }
@@ -147,21 +162,28 @@ class File extends _$File {
     );
 
     if (rootDir != null) {
-      final name = rootDir.split(IO.Platform.pathSeparator).last;
-      FileEntry root = FileEntry(
-        path: rootDir,
-        name: name,
-        isHidden: name.startsWith('.'),
-        isDirectory: true,
-        isExpanded: true,
-        children: [],
-      );
-
-      final children = _loadChildren(root, rootDir);
-      root = root.copyWith(children: children);
-
-      state = state.copyWith(root: root);
+      await setRootAndLoadChildren(rootDir);
     }
+  }
+
+  Future<void> setRootAndLoadChildren(String rootDir) async {
+    final name = rootDir.split(IO.Platform.pathSeparator).last;
+    FileEntry root = FileEntry(
+      path: rootDir,
+      name: name,
+      isHidden: name.startsWith('.'),
+      isDirectory: true,
+      isExpanded: true,
+      children: [],
+    );
+
+    final children = _loadChildren(root, rootDir);
+    root = root.copyWith(children: children);
+
+    state = state.copyWith(root: root);
+
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_key, rootDir);
   }
 
   void clearSelectedFile() {
