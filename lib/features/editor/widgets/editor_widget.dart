@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:math';
+import 'dart:ui';
 
 import 'package:flutter/material.dart' hide Tab;
 import 'package:flutter/services.dart';
@@ -765,6 +766,12 @@ class EditorWidget extends HookConsumerWidget {
                       ref,
                     ),
                     child: GestureDetector(
+                      supportedDevices: {
+                        PointerDeviceKind.touch,
+                        PointerDeviceKind.mouse,
+                        PointerDeviceKind.stylus,
+                        PointerDeviceKind.invertedStylus,
+                      },
                       onTapDown: (details) => _handleTapDown(
                         details,
                         painterKey,
