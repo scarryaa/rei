@@ -45,6 +45,9 @@ class InteractiveButtonWidget extends HookConsumerWidget {
             isPressed.value = false;
             onTapUp?.call();
           },
+          onTapCancel: () {
+            isPressed.value = false;
+          },
           child: Container(
             padding: EdgeInsetsDirectional.all(innerPadding),
             decoration: BoxDecoration(

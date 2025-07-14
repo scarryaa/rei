@@ -22,8 +22,15 @@ class TabWidget extends HookConsumerWidget {
     final notifier = ref.read(tabProvider.notifier);
 
     return Listener(
-      onPointerDown: (event) {
+      onPointerDown: (event) async {
         if (event.buttons == kMiddleMouseButton) {
+          if (state.isDirty) {
+            final confirmed = await _showCloseConfirmation(
+              context,
+              isMultiple: false,
+            );
+            if (!confirmed) return;
+          }
           notifier.removeTab(state.path);
         }
       },
@@ -35,20 +42,92 @@ class TabWidget extends HookConsumerWidget {
           items: [
             ContextMenuItem(
               title: 'Close',
-              onTap: () => notifier.removeTab(state.path),
+              onTap: () async {
+                if (state.isDirty) {
+                  final confirmed = await _showCloseConfirmation(
+                    context,
+                    isMultiple: false,
+                  );
+
+                  if (!confirmed) return;
+                }
+
+                notifier.removeTab(state.path);
+              },
             ),
             ContextMenuItem(
               title: 'Close others',
-              onTap: () => notifier.closeOtherTabs(state.path),
+              onTap: () async {
+                final allTabs = ref.read(tabProvider);
+                final affectedTabs = allTabs.where(
+                  (tab) => tab.path != state.path,
+                );
+                final hasDirty = affectedTabs.any((tab) => tab.isDirty);
+
+                if (hasDirty) {
+                  final confirmed = await _showCloseConfirmation(
+                    context,
+                    isMultiple: true,
+                  );
+
+                  if (!confirmed) return;
+                }
+
+                notifier.closeOtherTabs(state.path);
+              },
             ),
             ContextMenuItem.divider,
             ContextMenuItem(
               title: 'Close left',
-              onTap: () => notifier.closeLeftTabs(state.path),
+              onTap: () async {
+                final allTabs = ref.read(tabProvider);
+                final targetIndex = allTabs.indexWhere(
+                  (tab) => tab.path == state.path,
+                );
+
+                if (targetIndex <= 0) return;
+
+                final affectedTabs = allTabs.sublist(0, targetIndex);
+                final hasDirty = affectedTabs.any((tab) => tab.isDirty);
+
+                if (hasDirty) {
+                  final confirmed = await _showCloseConfirmation(
+                    context,
+                    isMultiple: true,
+                  );
+
+                  if (!confirmed) return;
+                }
+
+                notifier.closeLeftTabs(state.path);
+              },
             ),
             ContextMenuItem(
               title: 'Close right',
-              onTap: () => notifier.closeRightTabs(state.path),
+              onTap: () async {
+                final allTabs = ref.read(tabProvider);
+                final targetIndex = allTabs.indexWhere(
+                  (tab) => tab.path == state.path,
+                );
+
+                if (targetIndex == -1 || targetIndex == allTabs.length - 1) {
+                  return;
+                }
+
+                final affectedTabs = allTabs.sublist(targetIndex + 1);
+                final hasDirty = affectedTabs.any((tab) => tab.isDirty);
+
+                if (hasDirty) {
+                  final confirmed = await _showCloseConfirmation(
+                    context,
+                    isMultiple: true,
+                  );
+
+                  if (!confirmed) return;
+                }
+
+                notifier.closeRightTabs(state.path);
+              },
             ),
             ContextMenuItem.divider,
             ContextMenuItem(
@@ -57,7 +136,18 @@ class TabWidget extends HookConsumerWidget {
             ),
             ContextMenuItem(
               title: 'Close all',
-              onTap: () => notifier.closeAllTabs(),
+              onTap: () async {
+                final allTabs = ref.read(tabProvider);
+                final hasDirty = allTabs.any((tab) => tab.isDirty);
+                if (hasDirty) {
+                  final confirmed = await _showCloseConfirmation(
+                    context,
+                    isMultiple: true,
+                  );
+                  if (!confirmed) return;
+                }
+                notifier.closeAllTabs();
+              },
             ),
           ],
         ),
@@ -90,6 +180,7 @@ class TabWidget extends HookConsumerWidget {
                   ),
                 ),
                 _buildCloseButton(
+                  context,
                   isHovered.value,
                   () => notifier.removeTab(state.path),
                 ),
@@ -112,14 +203,62 @@ class TabWidget extends HookConsumerWidget {
     );
   }
 
-  Widget _buildCloseButton(bool isTabHovered, void Function() onClose) {
+  Widget _buildCloseButton(
+    BuildContext context,
+    bool isTabHovered,
+    void Function() onClose,
+  ) {
     return InteractiveButtonWidget(
-      onTapDown: () => onClose(),
+      onTapDown: () async {
+        if (state.isDirty) {
+          final confirmed = await _showCloseConfirmation(
+            context,
+            isMultiple: false,
+          );
+          if (!confirmed) return;
+        }
+        onClose();
+      },
       child: Icon(
         Icons.close_rounded,
         size: 13.0,
         color: isTabHovered ? Colors.white : Colors.transparent,
       ),
     );
+  }
+
+  Future<bool> _showCloseConfirmation(
+    BuildContext context, {
+    required bool isMultiple,
+  }) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (BuildContext dialogContext) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(4.0),
+                side: BorderSide(color: Color(0x10FFFFFF), width: 1.0),
+              ),
+              backgroundColor: Colors.black,
+              title: Text(isMultiple ? 'Close Tabs?' : 'Close Tab?'),
+              content: Text(
+                isMultiple
+                    ? 'Some tabs have unsaved changes. Are you sure you want to close them?'
+                    : 'This tab has unsaved changes. Are you sure you want to close it?',
+              ),
+              actions: <Widget>[
+                TextButton(
+                  child: const Text('Cancel'),
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                ),
+                TextButton(
+                  child: const Text('Close'),
+                  onPressed: () => Navigator.of(dialogContext).pop(true),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
   }
 }
