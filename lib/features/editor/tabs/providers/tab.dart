@@ -25,6 +25,71 @@ class Tab extends _$Tab {
     return [];
   }
 
+  // TODO: Show confirmation for dirty tabs for closing methods.
+  void closeAllTabs() {
+    state = [];
+  }
+
+  void closeCleanTabs() {
+    final newState = List<TabState>.from(state);
+    final activeIndex = newState.indexWhere(
+      (tab) => tab.isActive && !tab.isDirty,
+    );
+    final activeTabWasClosed = activeIndex != -1;
+
+    newState.removeWhere((tab) => !tab.isDirty);
+
+    if (activeTabWasClosed && newState.isNotEmpty) {
+      newState[newState.length - 1] = newState[newState.length - 1].copyWith(
+        isActive: true,
+      );
+    }
+
+    state = newState;
+  }
+
+  void closeLeftTabs(String path) {
+    final targetIndex = state.indexWhere((tab) => tab.path == path);
+    if (targetIndex <= 0) return;
+
+    final newState = List<TabState>.from(state);
+    final activeIndex = newState.indexWhere((tab) => tab.isActive);
+    final closedTabWasActive = activeIndex >= 0 && activeIndex < targetIndex;
+    newState.removeRange(0, targetIndex);
+
+    if (closedTabWasActive) {
+      newState[0] = newState[0].copyWith(isActive: true);
+    }
+
+    state = newState;
+  }
+
+  void closeRightTabs(String path) {
+    final targetIndex = state.indexWhere((tab) => tab.path == path);
+    final length = state.length;
+    if (targetIndex == -1 || targetIndex == length - 1) return;
+
+    final newState = List<TabState>.from(state);
+    final activeIndex = newState.indexWhere((tab) => tab.isActive);
+    final closedTabWasActive = activeIndex > targetIndex;
+    newState.removeRange(targetIndex + 1, length);
+
+    if (closedTabWasActive) {
+      newState[newState.length - 1] = newState[newState.length - 1].copyWith(
+        isActive: true,
+      );
+    }
+
+    state = newState;
+  }
+
+  void closeOtherTabs(String path) {
+    final newState = List<TabState>.from(state);
+    newState.removeWhere((tab) => tab.path != path);
+
+    state = newState;
+  }
+
   void updatePath(String oldPath, String newPath) {
     state = state.map((tab) {
       if (tab.path == oldPath) {

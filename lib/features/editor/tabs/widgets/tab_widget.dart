@@ -4,6 +4,7 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:rei/features/editor/tabs/models/tab_state.dart';
 import 'package:rei/features/editor/tabs/providers/tab.dart';
+import 'package:rei/shared/widgets/context_menu_widget.dart';
 import 'package:rei/shared/widgets/interactive_button_widget.dart';
 
 class TabWidget extends HookConsumerWidget {
@@ -28,6 +29,38 @@ class TabWidget extends HookConsumerWidget {
       },
       child: GestureDetector(
         onTapDown: (details) => notifier.markActive(state.path),
+        onSecondaryTapDown: (details) => ContextMenuWidget.show(
+          context: context,
+          position: details.globalPosition,
+          items: [
+            ContextMenuItem(
+              title: 'Close',
+              onTap: () => notifier.removeTab(state.path),
+            ),
+            ContextMenuItem(
+              title: 'Close others',
+              onTap: () => notifier.closeOtherTabs(state.path),
+            ),
+            ContextMenuItem.divider,
+            ContextMenuItem(
+              title: 'Close left',
+              onTap: () => notifier.closeLeftTabs(state.path),
+            ),
+            ContextMenuItem(
+              title: 'Close right',
+              onTap: () => notifier.closeRightTabs(state.path),
+            ),
+            ContextMenuItem.divider,
+            ContextMenuItem(
+              title: 'Close clean',
+              onTap: () => notifier.closeCleanTabs(),
+            ),
+            ContextMenuItem(
+              title: 'Close all',
+              onTap: () => notifier.closeAllTabs(),
+            ),
+          ],
+        ),
         child: MouseRegion(
           onEnter: (event) => isHovered.value = true,
           onExit: (event) => isHovered.value = false,
