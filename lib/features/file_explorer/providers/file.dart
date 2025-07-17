@@ -1,4 +1,5 @@
 import 'package:file_picker/file_picker.dart';
+import 'package:path/path.dart' as p;
 import 'package:rei/features/file_explorer/models/file_entry.dart';
 import 'package:rei/features/file_explorer/models/file_explorer_state.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -26,6 +27,136 @@ class File extends _$File {
     if (dir != null) {
       await setRootAndLoadChildren(dir);
     }
+  }
+
+  void _deleteFolder(String path) {
+    IO.Directory dir = IO.Directory(path);
+
+    if (dir.existsSync()) {
+      dir.deleteSync();
+    }
+  }
+
+  void _deleteFile(String path) {
+    IO.File file = IO.File(path);
+
+    if (file.existsSync()) {
+      file.deleteSync();
+    }
+  }
+
+  void deleteItem(String path) {
+    if (IO.File(path).existsSync()) {
+      _deleteFile(path);
+      reloadChildren(p.dirname(path));
+    } else {
+      _deleteFolder(path);
+      reloadChildren(p.dirname(path));
+    }
+  }
+
+  void reloadChildren(String directoryPath) {
+    if (state.root == null) return;
+
+    final targetDirectory = _findFileByPath(directoryPath);
+    if (targetDirectory == null || !targetDirectory.isDirectory) return;
+
+    final expandedStates = _captureExpandedStates(targetDirectory);
+
+    final newChildren = _loadChildren(targetDirectory, directoryPath);
+
+    final childrenWithExpandedStates = _restoreExpandedStates(
+      newChildren,
+      expandedStates,
+    );
+
+    state = state.copyWith(
+      root: _updateDirectoryChildren(
+        state.root!,
+        directoryPath,
+        childrenWithExpandedStates,
+      ),
+    );
+  }
+
+  Map<String, bool> _captureExpandedStates(FileEntry entry) {
+    final Map<String, bool> expandedStates = {};
+
+    void captureRecursively(FileEntry currentEntry) {
+      if (currentEntry.isDirectory) {
+        expandedStates[currentEntry.path] = currentEntry.isExpanded;
+
+        for (final child in currentEntry.children) {
+          captureRecursively(child);
+        }
+      }
+    }
+
+    captureRecursively(entry);
+    return expandedStates;
+  }
+
+  List<FileEntry> _restoreExpandedStates(
+    List<FileEntry> entries,
+    Map<String, bool> expandedStates,
+  ) {
+    return entries.map((entry) {
+      if (entry.isDirectory) {
+        final wasExpanded = expandedStates[entry.path] ?? false;
+
+        if (wasExpanded) {
+          final children = _loadChildren(entry, entry.path);
+          final childrenWithStates = _restoreExpandedStates(
+            children,
+            expandedStates,
+          );
+
+          return entry.copyWith(isExpanded: true, children: childrenWithStates);
+        } else {
+          return entry.copyWith(isExpanded: false);
+        }
+      }
+
+      return entry;
+    }).toList();
+  }
+
+  FileEntry _updateDirectoryChildren(
+    FileEntry entry,
+    String targetPath,
+    List<FileEntry> newChildren,
+  ) {
+    if (entry.path == targetPath) {
+      return entry.copyWith(children: newChildren);
+    }
+
+    final updatedChildren = entry.children.map((child) {
+      return _updateDirectoryChildren(child, targetPath, newChildren);
+    }).toList();
+
+    return entry.copyWith(children: updatedChildren);
+  }
+
+  String createNewFolder(String path, String folderName) {
+    final dirPath = IO.Directory(path).existsSync() ? path : p.dirname(path);
+    final finalPath = p.join(dirPath, folderName);
+    final folder = IO.Directory(finalPath);
+
+    folder.createSync();
+    reloadChildren(p.dirname(path));
+
+    return finalPath;
+  }
+
+  String createNewFile(String path, String fileName) {
+    final dirPath = IO.Directory(path).existsSync() ? path : p.dirname(path);
+    final finalPath = p.join(dirPath, fileName);
+    final file = IO.File(finalPath);
+
+    file.createSync();
+    reloadChildren(p.dirname(path));
+
+    return finalPath;
   }
 
   void setRoot(FileEntry root) {

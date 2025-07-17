@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math';
 
 import 'package:flutter/material.dart';
@@ -8,6 +9,7 @@ import 'package:rei/features/file_explorer/models/file_entry.dart';
 import 'package:rei/features/file_explorer/models/file_explorer_state.dart';
 import 'package:rei/features/file_explorer/providers/file.dart';
 import 'package:rei/shared/services/file_service.dart';
+import 'package:rei/shared/widgets/context_menu_widget.dart';
 
 class FileExplorerWidget extends HookConsumerWidget {
   const FileExplorerWidget({super.key});
@@ -23,33 +25,48 @@ class FileExplorerWidget extends HookConsumerWidget {
   void _handleTapDown(
     TapDownDetails details,
     FocusNode focusNode,
+    FocusNode? focusedChild,
     File notifier,
   ) {
     focusNode.requestFocus();
-    notifier.clearSelectedFile();
+
+    // If we are not creating a new file or renaming one, clear the selected file.
+    if (focusedChild == null || focusedChild == focusNode) {
+      notifier.clearSelectedFile();
+    }
   }
 
   KeyEventResult _handleKeyEvent(
     FocusNode node,
+    FocusNode? focusedChild,
     KeyEvent event,
     File notifier,
   ) {
-    if (event is! KeyDownEvent && event is! KeyRepeatEvent) {
+    if (event is! KeyDownEvent && event is! KeyRepeatEvent || !node.hasFocus) {
+      return KeyEventResult.ignored;
+    }
+
+    // Check if any text field is currently focused
+    if (focusedChild != null && focusedChild != node) {
       return KeyEventResult.ignored;
     }
 
     switch (event.logicalKey) {
       case LogicalKeyboardKey.arrowDown:
         notifier.selectNext();
+        return KeyEventResult.handled;
       case LogicalKeyboardKey.arrowUp:
         notifier.selectPrevious();
+        return KeyEventResult.handled;
       case LogicalKeyboardKey.arrowLeft:
         notifier.collapseCurrentDirectoryOrMoveToAndCollapseParent();
+        return KeyEventResult.handled;
       case LogicalKeyboardKey.arrowRight:
         notifier.moveToFirstChildAndExpand();
+        return KeyEventResult.handled;
     }
 
-    return KeyEventResult.handled;
+    return KeyEventResult.ignored;
   }
 
   @override
@@ -152,6 +169,8 @@ class FileExplorerWidget extends HookConsumerWidget {
             ? FileEntryWidget.depthPadding
             : 0.0;
 
+        final focusedChild = FocusScope.of(context).focusedChild;
+
         return SizedBox(
           width: constraints.maxWidth,
           child: Scrollbar(
@@ -176,8 +195,12 @@ class FileExplorerWidget extends HookConsumerWidget {
                       },
                       child: Focus(
                         focusNode: focusNode,
-                        onKeyEvent: (node, event) =>
-                            _handleKeyEvent(node, event, notifier),
+                        onKeyEvent: (node, event) => _handleKeyEvent(
+                          node,
+                          focusedChild,
+                          event,
+                          notifier,
+                        ),
                         child: SizedBox(
                           width: maxWidth,
                           child: Column(
@@ -189,6 +212,7 @@ class FileExplorerWidget extends HookConsumerWidget {
                                 onTapDown: (details) => _handleTapDown(
                                   details,
                                   focusNode,
+                                  focusedChild,
                                   notifier,
                                 ),
                                 child: Container(
@@ -277,48 +301,263 @@ class FileEntryWidget extends HookConsumerWidget {
   final int depth;
   final Color? colorOverride;
 
+  void _expandDirIfCollapsed() {
+    if (!isExpanded && isDirectory) {
+      notifier.toggleExpansion(path);
+    }
+  }
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isHovered = useState(false);
+    final isMakingNewFile = useState(false);
+    final isMakingNewFolder = useState(false);
+    final textFieldFocusNode = useFocusNode();
+    final textFieldController = useTextEditingController();
 
-    return MouseRegion(
-      onEnter: (event) => isHovered.value = true,
-      onExit: (event) => isHovered.value = false,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTapDown: (details) {
-          if (isDirectory) {
-            notifier.toggleExpansion(path);
-          } else {
-            // Open in editor.
-            FileService.selectFile(path);
+    void handleFileCreation(String fileName) {
+      if (isMakingNewFile.value) {
+        String fileName = textFieldController.text.trim();
+
+        String? finalPath;
+        if (fileName.isNotEmpty) {
+          finalPath = notifier.createNewFile(path, fileName);
+        }
+
+        isMakingNewFile.value = false;
+        textFieldController.clear();
+
+        if (finalPath != null) {
+          notifier.selectFile(finalPath);
+        }
+      }
+    }
+
+    void handleFolderCreation(String folderName) {
+      if (isMakingNewFolder.value) {
+        String folderName = textFieldController.text.trim();
+
+        String? finalPath;
+        if (folderName.isNotEmpty) {
+          finalPath = notifier.createNewFolder(path, folderName);
+        }
+
+        isMakingNewFolder.value = false;
+        textFieldController.clear();
+
+        if (finalPath != null) {
+          notifier.selectFile(finalPath);
+        }
+      }
+    }
+
+    useEffect(() {
+      void focusListener() {
+        if (!textFieldFocusNode.hasFocus) {
+          if (isMakingNewFolder.value) {
+            handleFolderCreation(textFieldController.text.trim());
+          } else if (isMakingNewFile.value) {
+            handleFileCreation(textFieldController.text.trim());
           }
+        }
+      }
 
-          notifier.selectFile(path);
-        },
-        child: Container(
-          color: (colorOverride != null)
-              ? colorOverride
-              : isHovered.value
-              ? Colors.lightBlue.withValues(alpha: 0.3)
-              : null,
-          padding: EdgeInsets.only(left: leftPadding + (depth * depthPadding)),
-          child: Row(
-            spacing: spacing,
-            children: [
-              Icon(
-                isDirectory ? Icons.folder : Icons.insert_drive_file_rounded,
-                size: iconSize,
-                color: isHidden ? Color(0x70FFFFFF) : Color(0xBBFFFFFF),
-              ),
-              Text(
-                name,
-                style: FileExplorerWidget.textStyle.copyWith(
-                  color: isHidden ? Color(0x65FFFFFF) : Color(0xAAFFFFFF),
+      textFieldFocusNode.addListener(focusListener);
+
+      return () => textFieldFocusNode.removeListener(focusListener);
+    }, [textFieldFocusNode]);
+
+    return Column(
+      children: [
+        MouseRegion(
+          onEnter: (event) => isHovered.value = true,
+          onExit: (event) => isHovered.value = false,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTapDown: (details) {
+              if (isDirectory) {
+                notifier.toggleExpansion(path);
+              } else {
+                // Open in editor.
+                FileService.selectFile(path);
+              }
+
+              notifier.selectFile(path);
+            },
+            onSecondaryTapDown: (details) => ContextMenuWidget.show(
+              context: context,
+              position: details.globalPosition,
+              items: [
+                ContextMenuItem(
+                  title: 'New File',
+                  onTap: () async {
+                    _expandDirIfCollapsed();
+
+                    isMakingNewFile.value = true;
+                    textFieldFocusNode.requestFocus();
+                  },
                 ),
+                ContextMenuItem(
+                  title: 'New Folder',
+                  onTap: () async {
+                    _expandDirIfCollapsed();
+
+                    isMakingNewFolder.value = true;
+                    textFieldFocusNode.requestFocus();
+                  },
+                ),
+                ContextMenuItem(
+                  title: 'Delete',
+                  onTap: () async {
+                    final showConfirmation =
+                        !HardwareKeyboard.instance.isShiftPressed;
+                    final fileName = path.split(Platform.pathSeparator).last;
+
+                    if (showConfirmation) {
+                      final result = await _showDeleteConfirmation(
+                        context,
+                        fileName,
+                      );
+
+                      if (result) {
+                        notifier.deleteItem(path);
+                      }
+                    } else {
+                      notifier.deleteItem(path);
+                    }
+                  },
+                ),
+              ],
+            ),
+            child: Container(
+              color: (colorOverride != null)
+                  ? colorOverride
+                  : isHovered.value
+                  ? Colors.lightBlue.withValues(alpha: 0.3)
+                  : null,
+              padding: EdgeInsets.only(
+                left: leftPadding + (depth * depthPadding),
               ),
-            ],
+              child: Row(
+                spacing: spacing,
+                children: [
+                  Icon(
+                    isDirectory
+                        ? Icons.folder
+                        : Icons.insert_drive_file_rounded,
+                    size: iconSize,
+                    color: isHidden ? Color(0x70FFFFFF) : Color(0xBBFFFFFF),
+                  ),
+                  Text(
+                    name,
+                    style: FileExplorerWidget.textStyle.copyWith(
+                      color: isHidden ? Color(0x65FFFFFF) : Color(0xAAFFFFFF),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
+        ),
+        if (isMakingNewFile.value)
+          _buildNewItemWidget(
+            false,
+            textFieldController,
+            textFieldFocusNode,
+            handleFileCreation,
+          ),
+        if (isMakingNewFolder.value)
+          _buildNewItemWidget(
+            true,
+            textFieldController,
+            textFieldFocusNode,
+            handleFolderCreation,
+          ),
+      ],
+    );
+  }
+
+  Future<bool> _showDeleteConfirmation(
+    BuildContext context,
+    String fileName,
+  ) async {
+    return await showDialog<bool>(
+          context: context,
+          builder: (BuildContext dialogContext) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(4.0),
+                side: BorderSide(color: Color(0x10FFFFFF), width: 1.0),
+              ),
+              backgroundColor: Colors.black,
+              title: Text('Delete $fileName?'),
+              content: Text(
+                '(Hold shift to bypass this dialog)',
+                style: TextStyle(color: Color(0x50FFFFFF)),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  child: const Text('Cancel'),
+                  onPressed: () => Navigator.of(dialogContext).pop(false),
+                ),
+                TextButton(
+                  child: const Text('Delete'),
+                  onPressed: () => Navigator.of(dialogContext).pop(true),
+                ),
+              ],
+            );
+          },
+        ) ??
+        false;
+  }
+
+  Widget _buildNewItemWidget(
+    bool creatingADirectory,
+    TextEditingController textFieldController,
+    FocusNode textFieldFocusNode,
+    Function(String) onItemCreated,
+  ) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Container(
+        padding: EdgeInsets.only(left: leftPadding + (depth * depthPadding)),
+        child: TextField(
+          controller: textFieldController,
+          style: TextStyle(color: Colors.white, fontSize: 14.0),
+          focusNode: textFieldFocusNode,
+          cursorHeight: 14.0,
+          decoration: InputDecoration(
+            icon: Icon(
+              size: iconSize,
+              creatingADirectory
+                  ? Icons.folder
+                  : Icons.insert_drive_file_rounded,
+            ),
+            isDense: true,
+            contentPadding: EdgeInsets.symmetric(
+              horizontal: 8.0,
+              vertical: 4.0,
+            ),
+            enabledBorder: OutlineInputBorder(
+              gapPadding: 0.0,
+              borderSide: BorderSide(color: Colors.lightBlue),
+            ),
+            focusedBorder: OutlineInputBorder(
+              gapPadding: 0.0,
+              borderSide: BorderSide(color: Colors.lightBlue),
+            ),
+            border: OutlineInputBorder(
+              gapPadding: 0.0,
+              borderSide: BorderSide(color: Colors.lightBlue),
+            ),
+          ),
+          maxLines: 1,
+          onSubmitted: (value) {
+            onItemCreated(value);
+          },
+          onEditingComplete: () {
+            onItemCreated(textFieldController.text);
+          },
         ),
       ),
     );
