@@ -33,7 +33,7 @@ class File extends _$File {
     IO.Directory dir = IO.Directory(path);
 
     if (dir.existsSync()) {
-      dir.deleteSync();
+      dir.deleteSync(recursive: true);
     }
   }
 
@@ -43,6 +43,33 @@ class File extends _$File {
     if (file.existsSync()) {
       file.deleteSync();
     }
+  }
+
+  String renameItem(String path, String oldName, String newName) {
+    void reloadDirAndParentDir() {
+      reloadChildren(path);
+      reloadChildren(p.join(path, newName));
+    }
+
+    if (IO.File(p.join(path, oldName)).existsSync()) {
+      _renameFile(path, oldName, newName);
+      reloadDirAndParentDir();
+    } else {
+      _renameFolder(path, oldName, newName);
+      reloadDirAndParentDir();
+    }
+
+    return p.join(path, newName);
+  }
+
+  void _renameFile(String path, String oldName, String newName) {
+    IO.File file = IO.File(p.join(path, oldName));
+    file.renameSync(p.join(path, newName));
+  }
+
+  void _renameFolder(String path, String oldName, String newName) {
+    IO.Directory dir = IO.Directory(p.join(path, oldName));
+    dir.renameSync(p.join(path, newName));
   }
 
   void deleteItem(String path) {

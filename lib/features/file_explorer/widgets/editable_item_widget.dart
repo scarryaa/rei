@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:rei/features/file_explorer/widgets/file_explorer_widget.dart';
 
-class NewItemWidget extends StatelessWidget {
-  const NewItemWidget({
+class EditableItemWidget extends StatelessWidget {
+  const EditableItemWidget({
     super.key,
     required this.isDirectory,
     required this.depth,

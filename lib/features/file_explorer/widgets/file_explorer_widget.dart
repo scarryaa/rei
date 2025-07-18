@@ -5,12 +5,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:rei/features/file_explorer/hooks/item_rename_hook.dart';
 import 'package:rei/features/file_explorer/hooks/new_item_hook.dart';
 import 'package:rei/features/file_explorer/models/file_entry.dart';
 import 'package:rei/features/file_explorer/models/file_explorer_state.dart';
 import 'package:rei/features/file_explorer/models/new_item_state.dart';
 import 'package:rei/features/file_explorer/providers/file.dart';
-import 'package:rei/features/file_explorer/widgets/new_item_widget.dart';
+import 'package:rei/features/file_explorer/widgets/editable_item_widget.dart';
 import 'package:rei/shared/services/file_service.dart';
 import 'package:rei/shared/widgets/context_menu_widget.dart';
 
@@ -214,7 +215,7 @@ class FileExplorerWidget extends HookConsumerWidget {
                             children: [
                               ..._buildFileTree(notifier, state, root, 0),
                               if (newItemState.isMakingNewFile)
-                                NewItemWidget(
+                                EditableItemWidget(
                                   isDirectory: false,
                                   depth: 1,
                                   controller: newItemState.textFieldController,
@@ -228,7 +229,7 @@ class FileExplorerWidget extends HookConsumerWidget {
                                       ),
                                 ),
                               if (newItemState.isMakingNewFolder)
-                                NewItemWidget(
+                                EditableItemWidget(
                                   isDirectory: true,
                                   depth: 1,
                                   controller: newItemState.textFieldController,
@@ -370,103 +371,128 @@ class FileEntryWidget extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isHovered = useState(false);
     final newItemState = useNewItemCreation(notifier);
+    final renameItemState = useItemRename(notifier);
 
     return Column(
       children: [
-        MouseRegion(
-          onEnter: (event) => isHovered.value = true,
-          onExit: (event) => isHovered.value = false,
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTapDown: (details) {
-              if (isDirectory) {
-                notifier.toggleExpansion(path);
-              } else {
-                // Open in editor.
-                FileService.selectFile(path);
-              }
+        if (renameItemState.isRenaming)
+          EditableItemWidget(
+            isDirectory: isDirectory,
+            depth: depth,
+            controller: renameItemState.textFieldController,
+            focusNode: renameItemState.textFieldFocusNode,
+            onSubmitted: (value) =>
+                renameItemState.renameItem(name, value.trim()),
+            onEditingComplete: () => renameItemState.renameItem(
+              name,
+              renameItemState.textFieldController.text.trim(),
+            ),
+          )
+        else
+          MouseRegion(
+            onEnter: (event) => isHovered.value = true,
+            onExit: (event) => isHovered.value = false,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTapDown: (details) {
+                if (isDirectory) {
+                  notifier.toggleExpansion(path);
+                } else {
+                  // Open in editor.
+                  FileService.selectFile(path);
+                }
 
-              notifier.selectFile(path);
-            },
-            onSecondaryTapDown: (details) {
-              notifier.selectFile(path);
+                notifier.selectFile(path);
+              },
+              onSecondaryTapDown: (details) {
+                notifier.selectFile(path);
 
-              ContextMenuWidget.show(
-                context: context,
-                position: details.globalPosition,
-                items: [
-                  ContextMenuItem(
-                    title: 'New File',
-                    onTap: () async {
-                      _expandDirIfCollapsed();
-                      newItemState.startFileCreation(path);
-                    },
-                  ),
-                  ContextMenuItem(
-                    title: 'New Folder',
-                    onTap: () async {
-                      _expandDirIfCollapsed();
-                      newItemState.startFolderCreation(path);
-                    },
-                  ),
-                  ContextMenuItem.divider,
-                  ContextMenuItem(title: 'Rename', onTap: () {}),
-                  ContextMenuItem(
-                    title: 'Delete',
-                    onTap: () async {
-                      final showConfirmation =
-                          !HardwareKeyboard.instance.isShiftPressed;
-                      final fileName = path.split(Platform.pathSeparator).last;
+                ContextMenuWidget.show(
+                  context: context,
+                  position: details.globalPosition,
+                  items: [
+                    ContextMenuItem(
+                      title: 'New File',
+                      onTap: () async {
+                        _expandDirIfCollapsed();
+                        newItemState.startFileCreation(path);
+                      },
+                    ),
+                    ContextMenuItem(
+                      title: 'New Folder',
+                      onTap: () async {
+                        _expandDirIfCollapsed();
+                        newItemState.startFolderCreation(path);
+                      },
+                    ),
+                    ContextMenuItem.divider,
+                    ContextMenuItem(
+                      title: 'Rename',
+                      onTap: () {
+                        final itemName = path
+                            .split(Platform.pathSeparator)
+                            .last;
+                        renameItemState.startRename(path, itemName);
+                      },
+                    ),
+                    ContextMenuItem(
+                      title: 'Delete',
+                      onTap: () async {
+                        final showConfirmation =
+                            !HardwareKeyboard.instance.isShiftPressed;
+                        final fileName = path
+                            .split(Platform.pathSeparator)
+                            .last;
 
-                      if (showConfirmation) {
-                        final result = await _showDeleteConfirmation(
-                          context,
-                          fileName,
-                        );
+                        if (showConfirmation) {
+                          final result = await _showDeleteConfirmation(
+                            context,
+                            fileName,
+                          );
 
-                        if (result) {
+                          if (result) {
+                            notifier.deleteItem(path);
+                          }
+                        } else {
                           notifier.deleteItem(path);
                         }
-                      } else {
-                        notifier.deleteItem(path);
-                      }
-                    },
-                  ),
-                ],
-              );
-            },
-            child: Container(
-              color: (colorOverride != null)
-                  ? colorOverride
-                  : isHovered.value
-                  ? Colors.lightBlue.withValues(alpha: 0.3)
-                  : null,
-              padding: EdgeInsets.only(
-                left: leftPadding + (depth * depthPadding),
-              ),
-              child: Row(
-                spacing: spacing,
-                children: [
-                  Icon(
-                    isDirectory
-                        ? Icons.folder
-                        : Icons.insert_drive_file_rounded,
-                    size: iconSize,
-                    color: isHidden ? Color(0x70FFFFFF) : Color(0xBBFFFFFF),
-                  ),
-                  Text(
-                    name,
-                    style: FileExplorerWidget.textStyle.copyWith(
-                      color: isHidden ? Color(0x65FFFFFF) : Color(0xAAFFFFFF),
+                      },
                     ),
-                  ),
-                ],
+                  ],
+                );
+              },
+              child: Container(
+                color: (colorOverride != null)
+                    ? colorOverride
+                    : isHovered.value
+                    ? Colors.lightBlue.withValues(alpha: 0.3)
+                    : null,
+                padding: EdgeInsets.only(
+                  left: leftPadding + (depth * depthPadding),
+                ),
+                child: Row(
+                  spacing: spacing,
+                  children: [
+                    Icon(
+                      isDirectory
+                          ? Icons.folder
+                          : Icons.insert_drive_file_rounded,
+                      size: iconSize,
+                      color: isHidden ? Color(0x70FFFFFF) : Color(0xBBFFFFFF),
+                    ),
+                    Text(
+                      name,
+                      style: FileExplorerWidget.textStyle.copyWith(
+                        color: isHidden ? Color(0x65FFFFFF) : Color(0xAAFFFFFF),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
-        ),
         if (newItemState.isMakingNewFile)
-          NewItemWidget(
+          EditableItemWidget(
             isDirectory: false,
             depth: depth + (isDirectory ? 1 : 0),
             controller: newItemState.textFieldController,
@@ -477,7 +503,7 @@ class FileEntryWidget extends HookConsumerWidget {
             ),
           ),
         if (newItemState.isMakingNewFolder)
-          NewItemWidget(
+          EditableItemWidget(
             isDirectory: true,
             depth: depth + (isDirectory ? 1 : 0),
             controller: newItemState.textFieldController,
