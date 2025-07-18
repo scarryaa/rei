@@ -219,11 +219,10 @@ class FileExplorerWidget extends HookConsumerWidget {
                                   depth: 1,
                                   controller: newItemState.textFieldController,
                                   focusNode: newItemState.textFieldFocusNode,
-                                  onSubmitted: (value) => newItemState
-                                      .createFile(root.path, value.trim()),
+                                  onSubmitted: (value) =>
+                                      newItemState.createFile(value.trim()),
                                   onEditingComplete: () =>
                                       newItemState.createFile(
-                                        root.path,
                                         newItemState.textFieldController.text
                                             .trim(),
                                       ),
@@ -234,11 +233,10 @@ class FileExplorerWidget extends HookConsumerWidget {
                                   depth: 1,
                                   controller: newItemState.textFieldController,
                                   focusNode: newItemState.textFieldFocusNode,
-                                  onSubmitted: (value) => newItemState
-                                      .createFolder(root.path, value.trim()),
+                                  onSubmitted: (value) =>
+                                      newItemState.createFolder(value.trim()),
                                   onEditingComplete: () =>
                                       newItemState.createFolder(
-                                        root.path,
                                         newItemState.textFieldController.text
                                             .trim(),
                                       ),
@@ -260,13 +258,17 @@ class FileExplorerWidget extends HookConsumerWidget {
                                       ContextMenuItem(
                                         title: 'New File',
                                         onTap: () async {
-                                          newItemState.startFileCreation();
+                                          newItemState.startFileCreation(
+                                            root.path,
+                                          );
                                         },
                                       ),
                                       ContextMenuItem(
                                         title: 'New Folder',
                                         onTap: () async {
-                                          newItemState.startFolderCreation();
+                                          newItemState.startFolderCreation(
+                                            root.path,
+                                          );
                                         },
                                       ),
                                     ],
@@ -397,14 +399,14 @@ class FileEntryWidget extends HookConsumerWidget {
                     title: 'New File',
                     onTap: () async {
                       _expandDirIfCollapsed();
-                      newItemState.startFileCreation();
+                      newItemState.startFileCreation(path);
                     },
                   ),
                   ContextMenuItem(
                     title: 'New Folder',
                     onTap: () async {
                       _expandDirIfCollapsed();
-                      newItemState.startFolderCreation();
+                      newItemState.startFolderCreation(path);
                     },
                   ),
                   ContextMenuItem.divider,
@@ -469,9 +471,8 @@ class FileEntryWidget extends HookConsumerWidget {
             depth: depth + 1,
             controller: newItemState.textFieldController,
             focusNode: newItemState.textFieldFocusNode,
-            onSubmitted: (value) => newItemState.createFile(path, value.trim()),
+            onSubmitted: (value) => newItemState.createFile(value.trim()),
             onEditingComplete: () => newItemState.createFile(
-              path,
               newItemState.textFieldController.text.trim(),
             ),
           ),
@@ -481,10 +482,8 @@ class FileEntryWidget extends HookConsumerWidget {
             depth: depth + 1,
             controller: newItemState.textFieldController,
             focusNode: newItemState.textFieldFocusNode,
-            onSubmitted: (value) =>
-                newItemState.createFolder(path, value.trim()),
+            onSubmitted: (value) => newItemState.createFolder(value.trim()),
             onEditingComplete: () => newItemState.createFolder(
-              path,
               newItemState.textFieldController.text.trim(),
             ),
           ),

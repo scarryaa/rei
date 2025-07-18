@@ -5,10 +5,10 @@ class NewItemState {
   final bool isMakingNewFolder;
   final TextEditingController textFieldController;
   final FocusNode textFieldFocusNode;
-  final Function() startFileCreation;
-  final Function() startFolderCreation;
-  final Function(String, String?) createFile;
-  final Function(String, String?) createFolder;
+  final Function(String) startFileCreation;
+  final Function(String) startFolderCreation;
+  final Function(String?) createFile;
+  final Function(String?) createFolder;
   final Function() cancelCreation;
 
   NewItemState({
