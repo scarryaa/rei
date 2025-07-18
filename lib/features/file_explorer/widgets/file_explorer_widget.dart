@@ -5,9 +5,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:rei/features/file_explorer/hooks/new_item_hook.dart';
 import 'package:rei/features/file_explorer/models/file_entry.dart';
 import 'package:rei/features/file_explorer/models/file_explorer_state.dart';
+import 'package:rei/features/file_explorer/models/new_item_state.dart';
 import 'package:rei/features/file_explorer/providers/file.dart';
+import 'package:rei/features/file_explorer/widgets/new_item_widget.dart';
 import 'package:rei/shared/services/file_service.dart';
 import 'package:rei/shared/widgets/context_menu_widget.dart';
 
@@ -76,6 +79,7 @@ class FileExplorerWidget extends HookConsumerWidget {
     final verticalScrollController = useScrollController();
     final horizontalScrollController = useScrollController();
     final focusNode = useFocusNode();
+    final newItemState = useNewItemCreation(notifier);
 
     return Material(
       type: MaterialType.transparency,
@@ -93,6 +97,7 @@ class FileExplorerWidget extends HookConsumerWidget {
                 notifier,
                 state,
                 state.root!,
+                newItemState,
               ),
       ),
     );
@@ -155,6 +160,7 @@ class FileExplorerWidget extends HookConsumerWidget {
     File notifier,
     FileExplorerState state,
     FileEntry root,
+    NewItemState newItemState,
   ) {
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -207,6 +213,37 @@ class FileExplorerWidget extends HookConsumerWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               ..._buildFileTree(notifier, state, root, 0),
+                              if (newItemState.isMakingNewFile)
+                                NewItemWidget(
+                                  isDirectory: false,
+                                  depth: 1,
+                                  controller: newItemState.textFieldController,
+                                  focusNode: newItemState.textFieldFocusNode,
+                                  onSubmitted: (value) => newItemState
+                                      .createFile(root.path, value.trim()),
+                                  onEditingComplete: () =>
+                                      newItemState.createFile(
+                                        root.path,
+                                        newItemState.textFieldController.text
+                                            .trim(),
+                                      ),
+                                ),
+                              if (newItemState.isMakingNewFolder)
+                                NewItemWidget(
+                                  isDirectory: true,
+                                  depth: 1,
+                                  controller: newItemState.textFieldController,
+                                  focusNode: newItemState.textFieldFocusNode,
+                                  onSubmitted: (value) => newItemState
+                                      .createFolder(root.path, value.trim()),
+                                  onEditingComplete: () =>
+                                      newItemState.createFolder(
+                                        root.path,
+                                        newItemState.textFieldController.text
+                                            .trim(),
+                                      ),
+                                ),
+
                               GestureDetector(
                                 behavior: HitTestBehavior.translucent,
                                 onTapDown: (details) => _handleTapDown(
@@ -215,6 +252,26 @@ class FileExplorerWidget extends HookConsumerWidget {
                                   focusedChild,
                                   notifier,
                                 ),
+                                onSecondaryTapDown: (details) {
+                                  ContextMenuWidget.show(
+                                    context: context,
+                                    position: details.globalPosition,
+                                    items: [
+                                      ContextMenuItem(
+                                        title: 'New File',
+                                        onTap: () async {
+                                          newItemState.startFileCreation();
+                                        },
+                                      ),
+                                      ContextMenuItem(
+                                        title: 'New Folder',
+                                        onTap: () async {
+                                          newItemState.startFolderCreation();
+                                        },
+                                      ),
+                                    ],
+                                  );
+                                },
                                 child: Container(
                                   color: Colors.transparent,
                                   width: maxWidth,
@@ -310,62 +367,7 @@ class FileEntryWidget extends HookConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isHovered = useState(false);
-    final isMakingNewFile = useState(false);
-    final isMakingNewFolder = useState(false);
-    final textFieldFocusNode = useFocusNode();
-    final textFieldController = useTextEditingController();
-
-    void handleFileCreation(String fileName) {
-      if (isMakingNewFile.value) {
-        String fileName = textFieldController.text.trim();
-
-        String? finalPath;
-        if (fileName.isNotEmpty) {
-          finalPath = notifier.createNewFile(path, fileName);
-        }
-
-        isMakingNewFile.value = false;
-        textFieldController.clear();
-
-        if (finalPath != null) {
-          notifier.selectFile(finalPath);
-        }
-      }
-    }
-
-    void handleFolderCreation(String folderName) {
-      if (isMakingNewFolder.value) {
-        String folderName = textFieldController.text.trim();
-
-        String? finalPath;
-        if (folderName.isNotEmpty) {
-          finalPath = notifier.createNewFolder(path, folderName);
-        }
-
-        isMakingNewFolder.value = false;
-        textFieldController.clear();
-
-        if (finalPath != null) {
-          notifier.selectFile(finalPath);
-        }
-      }
-    }
-
-    useEffect(() {
-      void focusListener() {
-        if (!textFieldFocusNode.hasFocus) {
-          if (isMakingNewFolder.value) {
-            handleFolderCreation(textFieldController.text.trim());
-          } else if (isMakingNewFile.value) {
-            handleFileCreation(textFieldController.text.trim());
-          }
-        }
-      }
-
-      textFieldFocusNode.addListener(focusListener);
-
-      return () => textFieldFocusNode.removeListener(focusListener);
-    }, [textFieldFocusNode]);
+    final newItemState = useNewItemCreation(notifier);
 
     return Column(
       children: [
@@ -384,51 +386,53 @@ class FileEntryWidget extends HookConsumerWidget {
 
               notifier.selectFile(path);
             },
-            onSecondaryTapDown: (details) => ContextMenuWidget.show(
-              context: context,
-              position: details.globalPosition,
-              items: [
-                ContextMenuItem(
-                  title: 'New File',
-                  onTap: () async {
-                    _expandDirIfCollapsed();
+            onSecondaryTapDown: (details) {
+              notifier.selectFile(path);
 
-                    isMakingNewFile.value = true;
-                    textFieldFocusNode.requestFocus();
-                  },
-                ),
-                ContextMenuItem(
-                  title: 'New Folder',
-                  onTap: () async {
-                    _expandDirIfCollapsed();
+              ContextMenuWidget.show(
+                context: context,
+                position: details.globalPosition,
+                items: [
+                  ContextMenuItem(
+                    title: 'New File',
+                    onTap: () async {
+                      _expandDirIfCollapsed();
+                      newItemState.startFileCreation();
+                    },
+                  ),
+                  ContextMenuItem(
+                    title: 'New Folder',
+                    onTap: () async {
+                      _expandDirIfCollapsed();
+                      newItemState.startFolderCreation();
+                    },
+                  ),
+                  ContextMenuItem.divider,
+                  ContextMenuItem(title: 'Rename', onTap: () {}),
+                  ContextMenuItem(
+                    title: 'Delete',
+                    onTap: () async {
+                      final showConfirmation =
+                          !HardwareKeyboard.instance.isShiftPressed;
+                      final fileName = path.split(Platform.pathSeparator).last;
 
-                    isMakingNewFolder.value = true;
-                    textFieldFocusNode.requestFocus();
-                  },
-                ),
-                ContextMenuItem(
-                  title: 'Delete',
-                  onTap: () async {
-                    final showConfirmation =
-                        !HardwareKeyboard.instance.isShiftPressed;
-                    final fileName = path.split(Platform.pathSeparator).last;
+                      if (showConfirmation) {
+                        final result = await _showDeleteConfirmation(
+                          context,
+                          fileName,
+                        );
 
-                    if (showConfirmation) {
-                      final result = await _showDeleteConfirmation(
-                        context,
-                        fileName,
-                      );
-
-                      if (result) {
+                        if (result) {
+                          notifier.deleteItem(path);
+                        }
+                      } else {
                         notifier.deleteItem(path);
                       }
-                    } else {
-                      notifier.deleteItem(path);
-                    }
-                  },
-                ),
-              ],
-            ),
+                    },
+                  ),
+                ],
+              );
+            },
             child: Container(
               color: (colorOverride != null)
                   ? colorOverride
@@ -459,19 +463,30 @@ class FileEntryWidget extends HookConsumerWidget {
             ),
           ),
         ),
-        if (isMakingNewFile.value)
-          _buildNewItemWidget(
-            false,
-            textFieldController,
-            textFieldFocusNode,
-            handleFileCreation,
+        if (newItemState.isMakingNewFile)
+          NewItemWidget(
+            isDirectory: false,
+            depth: depth + 1,
+            controller: newItemState.textFieldController,
+            focusNode: newItemState.textFieldFocusNode,
+            onSubmitted: (value) => newItemState.createFile(path, value.trim()),
+            onEditingComplete: () => newItemState.createFile(
+              path,
+              newItemState.textFieldController.text.trim(),
+            ),
           ),
-        if (isMakingNewFolder.value)
-          _buildNewItemWidget(
-            true,
-            textFieldController,
-            textFieldFocusNode,
-            handleFolderCreation,
+        if (newItemState.isMakingNewFolder)
+          NewItemWidget(
+            isDirectory: true,
+            depth: depth + 1,
+            controller: newItemState.textFieldController,
+            focusNode: newItemState.textFieldFocusNode,
+            onSubmitted: (value) =>
+                newItemState.createFolder(path, value.trim()),
+            onEditingComplete: () => newItemState.createFolder(
+              path,
+              newItemState.textFieldController.text.trim(),
+            ),
           ),
       ],
     );
@@ -509,57 +524,5 @@ class FileEntryWidget extends HookConsumerWidget {
           },
         ) ??
         false;
-  }
-
-  Widget _buildNewItemWidget(
-    bool creatingADirectory,
-    TextEditingController textFieldController,
-    FocusNode textFieldFocusNode,
-    Function(String) onItemCreated,
-  ) {
-    return Align(
-      alignment: Alignment.centerLeft,
-      child: Container(
-        padding: EdgeInsets.only(left: leftPadding + (depth * depthPadding)),
-        child: TextField(
-          controller: textFieldController,
-          style: TextStyle(color: Colors.white, fontSize: 14.0),
-          focusNode: textFieldFocusNode,
-          cursorHeight: 14.0,
-          decoration: InputDecoration(
-            icon: Icon(
-              size: iconSize,
-              creatingADirectory
-                  ? Icons.folder
-                  : Icons.insert_drive_file_rounded,
-            ),
-            isDense: true,
-            contentPadding: EdgeInsets.symmetric(
-              horizontal: 8.0,
-              vertical: 4.0,
-            ),
-            enabledBorder: OutlineInputBorder(
-              gapPadding: 0.0,
-              borderSide: BorderSide(color: Colors.lightBlue),
-            ),
-            focusedBorder: OutlineInputBorder(
-              gapPadding: 0.0,
-              borderSide: BorderSide(color: Colors.lightBlue),
-            ),
-            border: OutlineInputBorder(
-              gapPadding: 0.0,
-              borderSide: BorderSide(color: Colors.lightBlue),
-            ),
-          ),
-          maxLines: 1,
-          onSubmitted: (value) {
-            onItemCreated(value);
-          },
-          onEditingComplete: () {
-            onItemCreated(textFieldController.text);
-          },
-        ),
-      ),
-    );
   }
 }

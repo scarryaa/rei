@@ -143,7 +143,7 @@ class File extends _$File {
     final folder = IO.Directory(finalPath);
 
     folder.createSync();
-    reloadChildren(p.dirname(path));
+    reloadChildren(state.root!.path == path ? path : p.dirname(path));
 
     return finalPath;
   }
@@ -154,7 +154,7 @@ class File extends _$File {
     final file = IO.File(finalPath);
 
     file.createSync();
-    reloadChildren(p.dirname(path));
+    reloadChildren(state.root!.path == path ? path : p.dirname(path));
 
     return finalPath;
   }

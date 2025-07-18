@@ -25,6 +25,9 @@ class ReiApp extends StatelessWidget {
       home: EditorScreen(),
       debugShowCheckedModeBanner: false,
       theme: ThemeData.dark().copyWith(
+        textTheme: ThemeData.dark().textTheme.apply(
+          fontFamily: 'IBM Plex Sans',
+        ),
         scrollbarTheme: ScrollbarThemeData(
           radius: Radius.zero,
           mainAxisMargin: 0.0,
