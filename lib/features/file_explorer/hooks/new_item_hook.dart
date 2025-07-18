@@ -82,6 +82,7 @@ NewItemState useNewItemCreation(File notifier) {
     isMakingNewFolder: isMakingNewFolder.value,
     textFieldController: textFieldController,
     textFieldFocusNode: textFieldFocusNode,
+    newItemPath: newItemPath.value,
     startFileCreation: startFileCreation,
     startFolderCreation: startFolderCreation,
     createFile: createFile,

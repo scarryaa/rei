@@ -5,6 +5,7 @@ class NewItemState {
   final bool isMakingNewFolder;
   final TextEditingController textFieldController;
   final FocusNode textFieldFocusNode;
+  final String newItemPath;
   final Function(String) startFileCreation;
   final Function(String) startFolderCreation;
   final Function(String?) createFile;
@@ -15,6 +16,7 @@ class NewItemState {
     required this.isMakingNewFile,
     required this.isMakingNewFolder,
     required this.textFieldController,
+    required this.newItemPath,
     required this.textFieldFocusNode,
     required this.startFileCreation,
     required this.startFolderCreation,

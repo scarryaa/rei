@@ -468,7 +468,7 @@ class FileEntryWidget extends HookConsumerWidget {
         if (newItemState.isMakingNewFile)
           NewItemWidget(
             isDirectory: false,
-            depth: depth + 1,
+            depth: depth + (isDirectory ? 1 : 0),
             controller: newItemState.textFieldController,
             focusNode: newItemState.textFieldFocusNode,
             onSubmitted: (value) => newItemState.createFile(value.trim()),
@@ -479,7 +479,7 @@ class FileEntryWidget extends HookConsumerWidget {
         if (newItemState.isMakingNewFolder)
           NewItemWidget(
             isDirectory: true,
-            depth: depth + 1,
+            depth: depth + (isDirectory ? 1 : 0),
             controller: newItemState.textFieldController,
             focusNode: newItemState.textFieldFocusNode,
             onSubmitted: (value) => newItemState.createFolder(value.trim()),
