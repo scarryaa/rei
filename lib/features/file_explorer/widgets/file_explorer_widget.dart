@@ -29,20 +29,20 @@ class FileExplorerWidget extends HookConsumerWidget {
   void _handleTapDown(
     TapDownDetails details,
     FocusNode focusNode,
-    FocusNode? focusedChild,
     File notifier,
   ) {
     focusNode.requestFocus();
 
+    final currentFocusedChild = FocusScope.of(focusNode.context!).focusedChild;
+
     // If we are not creating a new file or renaming one, clear the selected file.
-    if (focusedChild == null || focusedChild == focusNode) {
+    if (currentFocusedChild == null || currentFocusedChild == focusNode) {
       notifier.clearSelectedFile();
     }
   }
 
   KeyEventResult _handleKeyEvent(
     FocusNode node,
-    FocusNode? focusedChild,
     KeyEvent event,
     File notifier,
   ) {
@@ -50,8 +50,9 @@ class FileExplorerWidget extends HookConsumerWidget {
       return KeyEventResult.ignored;
     }
 
-    // Check if any text field is currently focused
-    if (focusedChild != null && focusedChild != node) {
+    final currentFocusedChild = FocusScope.of(node.context!).focusedChild;
+
+    if (currentFocusedChild != null && currentFocusedChild != node) {
       return KeyEventResult.ignored;
     }
 
@@ -176,8 +177,6 @@ class FileExplorerWidget extends HookConsumerWidget {
             ? FileEntryWidget.depthPadding
             : 0.0;
 
-        final focusedChild = FocusScope.of(context).focusedChild;
-
         return SizedBox(
           width: constraints.maxWidth,
           child: Scrollbar(
@@ -202,12 +201,8 @@ class FileExplorerWidget extends HookConsumerWidget {
                       },
                       child: Focus(
                         focusNode: focusNode,
-                        onKeyEvent: (node, event) => _handleKeyEvent(
-                          node,
-                          focusedChild,
-                          event,
-                          notifier,
-                        ),
+                        onKeyEvent: (node, event) =>
+                            _handleKeyEvent(node, event, notifier),
                         child: SizedBox(
                           width: maxWidth,
                           child: Column(
@@ -248,7 +243,6 @@ class FileExplorerWidget extends HookConsumerWidget {
                                 onTapDown: (details) => _handleTapDown(
                                   details,
                                   focusNode,
-                                  focusedChild,
                                   notifier,
                                 ),
                                 onSecondaryTapDown: (details) {
