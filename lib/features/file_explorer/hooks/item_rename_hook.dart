@@ -4,7 +4,7 @@ import 'package:rei/features/file_explorer/models/rename_item_state.dart';
 import 'package:rei/features/file_explorer/providers/file.dart';
 import 'package:path/path.dart' as p;
 
-RenameItemState useItemRename(File notifier) {
+RenameItemState useItemRename(String oldName, File notifier) {
   final isRenaming = useState(false);
   final currentItemPath = useState('');
   final textFieldFocusNode = useFocusNode();
@@ -44,6 +44,18 @@ RenameItemState useItemRename(File notifier) {
 
     cancelRename();
   }
+
+  useEffect(() {
+    void focusListener() {
+      if (!textFieldFocusNode.hasFocus && isRenaming.value) {
+        renameItem(oldName, textFieldController.text.trim());
+      }
+    }
+
+    textFieldFocusNode.addListener(focusListener);
+
+    return () => textFieldFocusNode.removeListener(focusListener);
+  }, [textFieldFocusNode]);
 
   return RenameItemState(
     isRenaming: isRenaming.value,

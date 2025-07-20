@@ -253,6 +253,7 @@ class FileExplorerWidget extends HookConsumerWidget {
                                       ContextMenuItem(
                                         title: 'New File',
                                         onTap: () async {
+                                          notifier.clearSelectedFile();
                                           newItemState.startFileCreation(
                                             root.path,
                                           );
@@ -261,6 +262,7 @@ class FileExplorerWidget extends HookConsumerWidget {
                                       ContextMenuItem(
                                         title: 'New Folder',
                                         onTap: () async {
+                                          notifier.clearSelectedFile();
                                           newItemState.startFolderCreation(
                                             root.path,
                                           );
@@ -365,7 +367,7 @@ class FileEntryWidget extends HookConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final isHovered = useState(false);
     final newItemState = useNewItemCreation(notifier);
-    final renameItemState = useItemRename(notifier);
+    final renameItemState = useItemRename(name, notifier);
 
     return Column(
       children: [
