@@ -37,6 +37,12 @@ class File extends _$File {
     }
   }
 
+  String getRelativePath(String path) {
+    if (state.root == null) return '';
+
+    return p.relative(path, from: state.root!.path);
+  }
+
   void _deleteFile(String path) {
     IO.File file = IO.File(path);
 

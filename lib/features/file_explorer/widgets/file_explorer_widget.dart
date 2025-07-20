@@ -454,6 +454,21 @@ class FileEntryWidget extends HookConsumerWidget {
                         }
                       },
                     ),
+                    ContextMenuItem.divider,
+                    ContextMenuItem(
+                      title: 'Copy path',
+                      onTap: () {
+                        Clipboard.setData(ClipboardData(text: path));
+                      },
+                    ),
+                    ContextMenuItem(
+                      title: 'Copy relative path',
+                      onTap: () {
+                        Clipboard.setData(
+                          ClipboardData(text: notifier.getRelativePath(path)),
+                        );
+                      },
+                    ),
                   ],
                 );
               },
