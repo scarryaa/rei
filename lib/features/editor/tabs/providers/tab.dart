@@ -150,6 +150,35 @@ class Tab extends _$Tab {
     return true;
   }
 
+  void updateTabPathsByDir(String oldPath, String newPath) {
+    final newTabs = state.map((tab) {
+      if (tab.path.startsWith(oldPath)) {
+        final updatedPath = newPath + tab.path.substring(oldPath.length);
+        final updatedName = updatedPath.split(Platform.pathSeparator).last;
+
+        final fileContents = tab.originalContent;
+
+        final updatedNotifier = ref.read(editorProvider(updatedPath).notifier);
+        updatedNotifier.openFile(
+          fileContents,
+          tab.savedState?.cursor,
+          tab.savedState?.selection,
+        );
+        updateOriginalContent(updatedPath, fileContents);
+
+        return tab.copyWith(
+          path: updatedPath,
+          name: updatedName,
+          originalContent: fileContents,
+        );
+      }
+
+      return tab;
+    }).toList();
+
+    state = newTabs;
+  }
+
   bool addTab(String name, String path) {
     final List<TabState> newTabs = state
         .map((tab) => tab.copyWith(isActive: false))

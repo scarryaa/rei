@@ -5,7 +5,7 @@ class RenameItemState {
   final TextEditingController textFieldController;
   final FocusNode textFieldFocusNode;
   final String currentItemPath;
-  final Function(String, String) renameItem;
+  final (String, String) Function(String, String) renameItem;
   final Function(String, String) startRename;
   final Function() cancelRename;
 

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:rei/features/file_explorer/widgets/file_explorer_widget.dart';
 
-class EditableItemWidget extends StatelessWidget {
+class EditableItemWidget extends StatefulWidget {
   const EditableItemWidget({
     super.key,
     required this.isDirectory,
@@ -20,6 +20,39 @@ class EditableItemWidget extends StatelessWidget {
   final Function() onEditingComplete;
 
   @override
+  State<EditableItemWidget> createState() => _EditableItemWidgetState();
+}
+
+class _EditableItemWidgetState extends State<EditableItemWidget> {
+  bool _isProcessing = false;
+
+  void _handleSubmission(String value) {
+    if (_isProcessing) return;
+    _isProcessing = true;
+
+    widget.onSubmitted(value);
+
+    Future.delayed(Duration(milliseconds: 100), () {
+      if (mounted) {
+        _isProcessing = false;
+      }
+    });
+  }
+
+  void _handleEditingComplete() {
+    if (_isProcessing) return;
+    _isProcessing = true;
+
+    widget.onEditingComplete();
+
+    Future.delayed(Duration(milliseconds: 100), () {
+      if (mounted) {
+        _isProcessing = false;
+      }
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Align(
       alignment: Alignment.centerLeft,
@@ -27,17 +60,19 @@ class EditableItemWidget extends StatelessWidget {
         padding: EdgeInsets.only(
           left:
               FileEntryWidget.leftPadding +
-              (depth * FileEntryWidget.depthPadding),
+              (widget.depth * FileEntryWidget.depthPadding),
         ),
         child: TextField(
-          controller: controller,
+          controller: widget.controller,
           style: TextStyle(color: Colors.white, fontSize: 14.0),
-          focusNode: focusNode,
+          focusNode: widget.focusNode,
           cursorHeight: 14.0,
           decoration: InputDecoration(
             icon: Icon(
               size: FileEntryWidget.iconSize,
-              isDirectory ? Icons.folder : Icons.insert_drive_file_rounded,
+              widget.isDirectory
+                  ? Icons.folder
+                  : Icons.insert_drive_file_rounded,
             ),
             isDense: true,
             contentPadding: EdgeInsets.symmetric(
@@ -58,8 +93,8 @@ class EditableItemWidget extends StatelessWidget {
             ),
           ),
           maxLines: 1,
-          onSubmitted: onSubmitted,
-          onEditingComplete: onEditingComplete,
+          onSubmitted: _handleSubmission,
+          onEditingComplete: _handleEditingComplete,
         ),
       ),
     );

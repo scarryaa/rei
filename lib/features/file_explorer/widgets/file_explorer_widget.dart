@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:rei/features/editor/tabs/providers/tab.dart';
 import 'package:rei/features/file_explorer/hooks/item_rename_hook.dart';
 import 'package:rei/features/file_explorer/hooks/new_item_hook.dart';
 import 'package:rei/features/file_explorer/models/file_entry.dart';
@@ -368,6 +369,7 @@ class FileEntryWidget extends HookConsumerWidget {
     final isHovered = useState(false);
     final newItemState = useNewItemCreation(notifier);
     final renameItemState = useItemRename(name, notifier);
+    final tabNotifier = ref.read(tabProvider.notifier);
 
     return Column(
       children: [
@@ -377,12 +379,20 @@ class FileEntryWidget extends HookConsumerWidget {
             depth: depth,
             controller: renameItemState.textFieldController,
             focusNode: renameItemState.textFieldFocusNode,
-            onSubmitted: (value) =>
-                renameItemState.renameItem(name, value.trim()),
-            onEditingComplete: () => renameItemState.renameItem(
-              name,
-              renameItemState.textFieldController.text.trim(),
-            ),
+            onSubmitted: (value) {
+              final (oldPath, newPath) = renameItemState.renameItem(
+                name,
+                value.trim(),
+              );
+              tabNotifier.updateTabPathsByDir(oldPath, newPath);
+            },
+            onEditingComplete: () {
+              final (oldPath, newPath) = renameItemState.renameItem(
+                name,
+                renameItemState.textFieldController.text.trim(),
+              );
+              tabNotifier.updateTabPathsByDir(oldPath, newPath);
+            },
           )
         else
           MouseRegion(

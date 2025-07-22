@@ -51,7 +51,7 @@ class File extends _$File {
     }
   }
 
-  String renameItem(String path, String oldName, String newName) {
+  (String, String) renameItem(String path, String oldName, String newName) {
     void reloadDirAndParentDir() {
       reloadChildren(path);
       reloadChildren(p.join(path, newName));
@@ -65,7 +65,7 @@ class File extends _$File {
       reloadDirAndParentDir();
     }
 
-    return p.join(path, newName);
+    return (p.join(path, oldName), p.join(path, newName));
   }
 
   void _renameFile(String path, String oldName, String newName) {

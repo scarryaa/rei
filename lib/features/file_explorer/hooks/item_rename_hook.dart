@@ -30,11 +30,12 @@ RenameItemState useItemRename(String oldName, File notifier) {
     currentItemPath.value = '';
   }
 
-  void renameItem(String oldName, String? newName) {
+  (String, String) renameItem(String oldName, String? newName) {
+    String oldPath = '', finalPath = '';
     if (newName != null &&
         newName.isNotEmpty &&
         currentItemPath.value.isNotEmpty) {
-      final finalPath = notifier.renameItem(
+      (oldPath, finalPath) = notifier.renameItem(
         currentItemPath.value,
         oldName,
         newName,
@@ -43,6 +44,8 @@ RenameItemState useItemRename(String oldName, File notifier) {
     }
 
     cancelRename();
+
+    return (oldPath, finalPath);
   }
 
   useEffect(() {
